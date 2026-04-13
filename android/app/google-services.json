@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "720436005385",
+    "project_id": "selvplukk-cbd5f",
+    "storage_bucket": "selvplukk-cbd5f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:720436005385:android:eb1dd24d2dbe14f66346d8",
+        "android_client_info": {
+          "package_name": "com.splukk.splukk"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDb5a2weCo2RfZbOHgoTCzoX4jhqjm6z2c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

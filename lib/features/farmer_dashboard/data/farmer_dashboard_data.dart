@@ -1,0 +1,2 @@
+/// Çiftçi paneli — data.
+library;

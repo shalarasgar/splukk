@@ -1,0 +1,2 @@
+/// Çiftçi paneli — domain.
+library;
