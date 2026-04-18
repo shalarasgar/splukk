@@ -28,6 +28,7 @@ class DayTimeSlot extends Equatable {
     required this.endMinutes,
     required this.maxPeople,
     this.bookedCount = 0,
+    this.specificDate,
   });
 
   /// [DateTime.monday] … [DateTime.sunday] (ISO, Dart default).
@@ -36,10 +37,11 @@ class DayTimeSlot extends Equatable {
   final int endMinutes;
   final int maxPeople;
   final int bookedCount;
+  final DateTime? specificDate;
 
   @override
   List<Object?> get props =>
-      [weekday, startMinutes, endMinutes, maxPeople, bookedCount];
+      [weekday, startMinutes, endMinutes, maxPeople, bookedCount, specificDate];
 }
 
 class FarmListing extends Equatable {

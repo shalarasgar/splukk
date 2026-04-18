@@ -70,6 +70,7 @@ class FarmListingModel {
               'endMinutes': e.endMinutes,
               'maxPeople': e.maxPeople,
               'bookedCount': e.bookedCount,
+              if (e.specificDate != null) 'specificDate': e.specificDate!.millisecondsSinceEpoch,
             },
           )
           .toList(),
@@ -149,6 +150,10 @@ class FarmListingModel {
       final em = _readInt(map['endMinutes']);
       final cap = _readInt(map['maxPeople']);
       final booked = _readInt(map['bookedCount']) ?? 0;
+      final specificDateMs = _readInt(map['specificDate']);
+      final specificDate = specificDateMs != null
+          ? DateTime.fromMillisecondsSinceEpoch(specificDateMs)
+          : null;
       if (wd == null || sm == null || em == null || cap == null) continue;
       out.add(
         DayTimeSlot(
@@ -157,6 +162,7 @@ class FarmListingModel {
           endMinutes: em,
           maxPeople: cap,
           bookedCount: booked,
+          specificDate: specificDate,
         ),
       );
     }

@@ -2,23 +2,22 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/app_messages.dart';
-import '../../../core/router/app_router.gr.dart';
 import '../../../core/constants/availability_presets.dart';
 import '../../../core/constants/products.dart';
+import '../../../core/router/app_router.gr.dart';
 import '../../../core/utils/nok_money.dart';
 import '../../auth/domain/auth_domain.dart';
 import '../../auth/presentation/auth_bloc.dart';
 import '../domain/listings_domain.dart';
+import 'widgets/listing_card.dart';
 
 @RoutePage()
 class FarmerListingFormPage extends StatefulWidget {
-  const FarmerListingFormPage({
-    super.key,
-    this.listingId,
-  });
+  const FarmerListingFormPage({super.key, this.listingId});
 
   final String? listingId;
 
@@ -46,9 +45,11 @@ class _ScheduleDraft {
     required this.start,
     required this.end,
     required this.capacityController,
+    this.calendarAnchor,
   });
 
   int weekday;
+
   /// Takvimden seçilen tarih (yalnızca form gösterimi; kayıtta yine haftanın günü kullanılır).
   DateTime? calendarAnchor;
   TimeOfDay start;
@@ -73,6 +74,15 @@ class _FarmerListingFormPageState extends State<FarmerListingFormPage> {
   bool _loading = false;
   bool _saving = false;
   FarmListing? _existing;
+
+  static DateTime _nextOccurrenceOfWeekday(int weekday, DateTime from) {
+    var d = DateTime(from.year, from.month, from.day);
+    for (var i = 0; i < 8; i++) {
+      if (d.weekday == weekday) return d;
+      d = d.add(const Duration(days: 1));
+    }
+    return d;
+  }
 
   @override
   void initState() {
@@ -107,9 +117,11 @@ class _FarmerListingFormPageState extends State<FarmerListingFormPage> {
       );
     }
     if (_scheduleRows.isEmpty) {
+      final mon = _nextOccurrenceOfWeekday(DateTime.monday, DateTime.now());
       _scheduleRows.add(
         _ScheduleDraft(
           weekday: DateTime.monday,
+          calendarAnchor: mon,
           start: const TimeOfDay(hour: 10, minute: 0),
           end: const TimeOfDay(hour: 18, minute: 0),
           capacityController: TextEditingController(text: '10'),
@@ -154,8 +166,9 @@ class _FarmerListingFormPageState extends State<FarmerListingFormPage> {
         _ProductLineDraft(
           categoryId: p.categoryId,
           productId: p.productId,
-          priceController:
-              TextEditingController(text: formatOreAsNokKr(p.priceOre)),
+          priceController: TextEditingController(
+            text: formatOreAsNokKr(p.priceOre),
+          ),
           unit: p.unit,
         ),
       );
@@ -179,12 +192,11 @@ class _FarmerListingFormPageState extends State<FarmerListingFormPage> {
             hour: s.startMinutes ~/ 60,
             minute: s.startMinutes % 60,
           ),
-          end: TimeOfDay(
-            hour: s.endMinutes ~/ 60,
-            minute: s.endMinutes % 60,
+          end: TimeOfDay(hour: s.endMinutes ~/ 60, minute: s.endMinutes % 60),
+          calendarAnchor: s.specificDate,
+          capacityController: TextEditingController(
+            text: s.maxPeople.toString(),
           ),
-          capacityController:
-              TextEditingController(text: s.maxPeople.toString()),
         ),
       );
     }
@@ -205,8 +217,7 @@ class _FarmerListingFormPageState extends State<FarmerListingFormPage> {
     super.dispose();
   }
 
-  int get _bandIndex =>
-      availabilityBandIndexForPercent(_availability.round());
+  int get _bandIndex => availabilityBandIndexForPercent(_availability.round());
 
   List<String> get _currentBandSuggestions =>
       availabilityBands[_bandIndex].suggestions;
@@ -356,18 +367,18 @@ class _FarmerListingFormPageState extends State<FarmerListingFormPage> {
       );
     }
     if (_scheduleRows.isEmpty) {
-      showAppSnackBar(context, 'En az bir zaman aralığı ekleyin', isError: true);
+      showAppSnackBar(
+        context,
+        'En az bir zaman aralığı ekleyin',
+        isError: true,
+      );
       return;
     }
     final slots = <DayTimeSlot>[];
     for (final row in _scheduleRows) {
       final cap = int.tryParse(row.capacityController.text.trim());
       if (cap == null || cap < 1) {
-        showAppSnackBar(
-          context,
-          'Kapasite en az 1 olmalı',
-          isError: true,
-        );
+        showAppSnackBar(context, 'Kapasite en az 1 olmalı', isError: true);
         return;
       }
       final sm = row.start.hour * 60 + row.start.minute;
@@ -392,8 +403,7 @@ class _FarmerListingFormPageState extends State<FarmerListingFormPage> {
     final pct = _availability.round().clamp(0, 100);
     final band = availabilityBands[availabilityBandIndexForPercent(pct)];
     final rawMsg = _messageIndexInBand ?? 0;
-    final msgIdx =
-        rawMsg.clamp(0, band.suggestions.length - 1);
+    final msgIdx = rawMsg.clamp(0, band.suggestions.length - 1);
 
     setState(() => _saving = true);
     try {
@@ -452,184 +462,400 @@ class _FarmerListingFormPageState extends State<FarmerListingFormPage> {
     }
   }
 
+  FarmListing _buildMockListing() {
+    final pct = _availability.round().clamp(0, 100);
+    final band = availabilityBands[availabilityBandIndexForPercent(pct)];
+    final msgIdx = (_messageIndexInBand ?? 0).clamp(
+      0,
+      band.suggestions.length - 1,
+    );
+    return FarmListing(
+      id: widget.listingId ?? 'mock',
+      farmerUid: 'mock_farmer',
+      farmName: _farmName.text.isNotEmpty ? _farmName.text : 'Çiftlik Adı',
+      city: _city.text.isNotEmpty ? _city.text : 'Şehir',
+      imageUrls: _existingImageUrls,
+      pickingType: _picking,
+      availabilityPercent: pct,
+      availabilityMessageIndex: msgIdx,
+      manualClosed: _manualClosed,
+      description: _description.text,
+      latitude: _existing?.latitude ?? 0,
+      longitude: _existing?.longitude ?? 0,
+      products: _productRows.map((r) {
+        final ore = parseNokToOre(r.priceController.text) ?? 0;
+        return ListingProductLine(
+          categoryId: r.categoryId,
+          productId: r.productId,
+          priceOre: ore,
+          unit: r.unit,
+        );
+      }).toList(),
+      schedule: _scheduleRows.map((s) {
+        final cap = int.tryParse(s.capacityController.text.trim()) ?? 10;
+        return DayTimeSlot(
+          weekday: s.weekday,
+          startMinutes: s.start.hour * 60 + s.start.minute,
+          endMinutes: s.end.hour * 60 + s.end.minute,
+          maxPeople: cap,
+          specificDate: s.calendarAnchor,
+        );
+      }).toList(),
+      createdAt: _existing?.createdAt ?? DateTime.now(),
+      updatedAt: _existing?.updatedAt ?? DateTime.now(),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24, bottom: 8),
+      child: Text(
+        title,
+        style: GoogleFonts.outfit(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: const Color(0xFF1A1A1A),
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _buildInputDecoration(
+    String label, {
+    String? hintText,
+    String? helperText,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hintText,
+      helperText: helperText,
+      labelStyle: GoogleFonts.inter(color: Colors.grey[600]),
+      hintStyle: GoogleFonts.inter(color: Colors.grey[400]),
+      helperStyle: GoogleFonts.inter(fontSize: 12, color: Colors.grey[500]),
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey[200]!),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey[200]!),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF2B8C5F), width: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        backgroundColor: Color(0xFFFBFBFB),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF2B8C5F)),
+        ),
       );
     }
 
     final bandSuggestions = _currentBandSuggestions;
-    final selectedMsgIdx = (_messageIndexInBand ?? 0)
-        .clamp(0, bandSuggestions.length - 1);
+    final selectedMsgIdx = (_messageIndexInBand ?? 0).clamp(
+      0,
+      bandSuggestions.length - 1,
+    );
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final headerHeight = screenWidth * 0.6;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.listingId == null ? 'Yeni ilan' : 'İlanı düzenle'),
-        actions: [
-          TextButton(
-            onPressed: _saving ? null : _save,
-            child: _saving
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Kaydet'),
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text(
-            'Görseller (isteğe bağlı)',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (var i = 0; i < _existingImageUrls.length; i++)
-                _NetworkThumb(
-                  url: _existingImageUrls[i],
-                  onRemove: () => _removeExistingImage(i),
+      backgroundColor: const Color(0xFFFBFBFB),
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverAppBar(
+            expandedHeight: headerHeight,
+            collapsedHeight: kToolbarHeight + 20,
+            toolbarHeight: kToolbarHeight + 20,
+            pinned: true,
+            stretch: true,
+            backgroundColor: const Color(0xFF2B8C5F),
+            iconTheme: const IconThemeData(color: Colors.white),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+                child: FilledButton(
+                  onPressed: _saving ? null : _save,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF2B8C5F),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: _saving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF2B8C5F),
+                          ),
+                        )
+                      : Text(
+                          'Kaydet',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
                 ),
-              for (var i = 0; i < _localImagePaths.length; i++)
-                _LocalThumb(
-                  path: _localImagePaths[i],
-                  onRemove: () => _removeLocalImage(i),
-                ),
-              ActionChip(
-                avatar: const Icon(Icons.add_photo_alternate_outlined),
-                label: const Text('Ekle'),
-                onPressed: _pickImages,
               ),
             ],
-          ),
-          const SizedBox(height: 24),
-          TextField(
-            controller: _farmName,
-            readOnly: true,
-            enableInteractiveSelection: false,
-            decoration: const InputDecoration(
-              labelText: 'Çiftlik adı',
-              helperText: 'Buradan değiştirilemez',
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _city,
-            readOnly: true,
-            enableInteractiveSelection: false,
-            decoration: const InputDecoration(
-              labelText: 'Şehir',
-              helperText: 'Buradan değiştirilemez',
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text('Ürün', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          for (var i = 0; i < _productRows.length; i++) ...[
-            _ProductRowEditor(
-              row: _productRows[i],
-              onChanged: () => setState(() {}),
-            ),
-            const SizedBox(height: 8),
-          ],
-          const SizedBox(height: 24),
-          Text('Toplama tipi', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          SegmentedButton<PickingType>(
-            segments: const [
-              ButtonSegment(
-                value: PickingType.selfPicking,
-                label: Text('Kendi toplama'),
+            flexibleSpace: FlexibleSpaceBar(
+              stretchModes: const [
+                StretchMode.zoomBackground,
+                StretchMode.blurBackground,
+              ],
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset('assets/4.png', fit: BoxFit.cover),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.4),
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.6),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 24,
+                    left: 20,
+                    right: 20,
+                    child: Text(
+                      widget.listingId == null ? 'Yeni ilan' : 'İlanı düzenle',
+                      style: GoogleFonts.outfit(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              ButtonSegment(
-                value: PickingType.prePicked,
-                label: Text('Toplanmış'),
-              ),
-            ],
-            selected: {_picking},
-            onSelectionChanged: (s) => setState(() => _picking = s.first),
+            ),
           ),
-          const SizedBox(height: 24),
-          Text(
-            'Kalan ürün (%) — ${_availability.round()}',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          Slider(
-            value: _availability,
-            min: 0,
-            max: 100,
-            divisions: 100,
-            label: '${_availability.round()}%',
-            onChanged: _onAvailabilityChanged,
-          ),
-          Text(
-            'Müsaitlik mesajı (${availabilityBands[_bandIndex].minInclusive}–${availabilityBands[_bandIndex].maxInclusive}%)',
-            style: Theme.of(context).textTheme.labelLarge,
-          ),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<int>(
-            value: selectedMsgIdx,
-            items: [
-              for (var i = 0; i < bandSuggestions.length; i++)
-                DropdownMenuItem(
-                  value: i,
-                  child: Text(
-                    bandSuggestions[i],
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                const SizedBox(height: 16),
+                Text(
+                  'Canlı Önizleme',
+                  style: GoogleFonts.outfit(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF2B8C5F),
                   ),
                 ),
-            ],
-            onChanged: (v) => setState(() => _messageIndexInBand = v),
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              labelText: 'Önerilen metin',
+                Text(
+                  'İlanınız müşterilere bu şekilde görünecek',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                ///////////////////////////// Card
+                const SizedBox(height: 12),
+                ListingCard(listing: _buildMockListing()),
+
+                _buildSectionHeader('Görseller (isteğe bağlı)'),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (var i = 0; i < _existingImageUrls.length; i++)
+                      _NetworkThumb(
+                        url: _existingImageUrls[i],
+                        onRemove: () => _removeExistingImage(i),
+                      ),
+                    for (var i = 0; i < _localImagePaths.length; i++)
+                      _LocalThumb(
+                        path: _localImagePaths[i],
+                        onRemove: () => _removeLocalImage(i),
+                      ),
+                    ActionChip(
+                      avatar: const Icon(Icons.add_photo_alternate_outlined),
+                      label: Text('Ekle', style: GoogleFonts.inter()),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      onPressed: _pickImages,
+                    ),
+                  ],
+                ),
+
+                _buildSectionHeader('Çiftlik Bilgileri'),
+                TextField(
+                  controller: _farmName,
+                  readOnly: true,
+                  enableInteractiveSelection: false,
+                  decoration: _buildInputDecoration(
+                    'Çiftlik adı',
+                    helperText: 'Buradan değiştirilemez',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _city,
+                  readOnly: true,
+                  enableInteractiveSelection: false,
+                  decoration: _buildInputDecoration(
+                    'Şehir',
+                    helperText: 'Buradan değiştirilemez',
+                  ),
+                ),
+
+                _buildSectionHeader('Ürün'),
+                for (var i = 0; i < _productRows.length; i++) ...[
+                  _ProductRowEditor(
+                    row: _productRows[i],
+                    onChanged: () => setState(() {}),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+
+                _buildSectionHeader('Toplama tipi'),
+                SegmentedButton<PickingType>(
+                  style: ButtonStyle(
+                    shape: WidgetStatePropertyAll(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  segments: const [
+                    ButtonSegment(
+                      value: PickingType.selfPicking,
+                      label: Text('Kendi toplama'),
+                    ),
+                    ButtonSegment(
+                      value: PickingType.prePicked,
+                      label: Text('Toplanmış'),
+                    ),
+                  ],
+                  selected: {_picking},
+                  onSelectionChanged: (s) => setState(() => _picking = s.first),
+                ),
+
+                _buildSectionHeader(
+                  'Kalan ürün (%) — ${_availability.round()}',
+                ),
+                Slider(
+                  value: _availability,
+                  min: 0,
+                  max: 100,
+                  divisions: 100,
+                  activeColor: const Color(0xFF2B8C5F),
+                  label: '${_availability.round()}%',
+                  onChanged: _onAvailabilityChanged,
+                ),
+                Text(
+                  'Müsaitlik mesajı (${availabilityBands[_bandIndex].minInclusive}–${availabilityBands[_bandIndex].maxInclusive}%)',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[700],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<int>(
+                  value: selectedMsgIdx,
+                  items: [
+                    for (var i = 0; i < bandSuggestions.length; i++)
+                      DropdownMenuItem(
+                        value: i,
+                        child: Text(
+                          bandSuggestions[i],
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(),
+                        ),
+                      ),
+                  ],
+                  onChanged: (v) => setState(() => _messageIndexInBand = v),
+                  decoration: _buildInputDecoration('Önerilen metin'),
+                ),
+
+                _buildSectionHeader('Görünürlük'),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[200]!),
+                  ),
+                  child: SwitchListTile(
+                    title: Text(
+                      'Manuel kapalı',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      'Açık saatlerde bile ilanı kapalı göster',
+                      style: GoogleFonts.inter(fontSize: 13),
+                    ),
+                    activeColor: const Color(0xFF2B8C5F),
+                    value: _manualClosed,
+                    onChanged: (v) => setState(() => _manualClosed = v),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _description,
+                  minLines: 3,
+                  maxLines: 6,
+                  decoration: _buildInputDecoration(
+                    'Açıklama (isteğe bağlı)',
+                    hintText: 'İptal / no-show kuralları vb.',
+                  ),
+                ),
+
+                _buildSectionHeader('Çalışma aralıkları'),
+                for (var i = 0; i < _scheduleRows.length; i++) ...[
+                  _ScheduleRowEditor(
+                    row: _scheduleRows[i],
+                    onRemove: () => _confirmRemoveScheduleRow(context, i),
+                    onChanged: () => setState(() {}),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                OutlinedButton.icon(
+                  onPressed: _addScheduleRow,
+                  icon: const Icon(Icons.schedule),
+                  label: Text(
+                    'Zaman aralığı ekle',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF2B8C5F),
+                    side: const BorderSide(color: Color(0xFF2B8C5F)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+                const SizedBox(height: 48),
+              ]),
             ),
           ),
-          const SizedBox(height: 24),
-          SwitchListTile(
-            title: const Text('Manuel kapalı'),
-            subtitle: const Text('Açık saatlerde bile ilanı kapalı göster'),
-            value: _manualClosed,
-            onChanged: (v) => setState(() => _manualClosed = v),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _description,
-            minLines: 3,
-            maxLines: 6,
-            decoration: const InputDecoration(
-              labelText: 'Açıklama (isteğe bağlı)',
-              hintText: 'İptal / no-show kuralları vb.',
-              border: OutlineInputBorder(),
-              alignLabelWithHint: true,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text('Çalışma aralıkları',
-              style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          for (var i = 0; i < _scheduleRows.length; i++) ...[
-            _ScheduleRowEditor(
-              row: _scheduleRows[i],
-              onRemove: () => _confirmRemoveScheduleRow(context, i),
-              onChanged: () => setState(() {}),
-            ),
-            const SizedBox(height: 8),
-          ],
-          OutlinedButton.icon(
-            onPressed: _addScheduleRow,
-            icon: const Icon(Icons.schedule),
-            label: const Text('Zaman aralığı ekle'),
-          ),
-          const SizedBox(height: 32),
         ],
       ),
     );
@@ -717,10 +943,7 @@ class _ThumbFrame extends StatelessWidget {
 }
 
 class _ProductRowEditor extends StatelessWidget {
-  const _ProductRowEditor({
-    required this.row,
-    required this.onChanged,
-  });
+  const _ProductRowEditor({required this.row, required this.onChanged});
 
   final _ProductLineDraft row;
   final VoidCallback onChanged;
@@ -791,8 +1014,9 @@ class _ProductRowEditor extends StatelessWidget {
                 Expanded(
                   child: TextField(
                     controller: row.priceController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(
                       labelText: 'Fiyat (NOK)',
                       hintText: 'Örn: 39,90',
@@ -855,8 +1079,8 @@ class _ScheduleRowEditor extends StatelessWidget {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final lastDate = today.add(const Duration(days: 365 * 3));
-    var initial = row.calendarAnchor ??
-        _nextOccurrenceOfWeekday(row.weekday, now);
+    var initial =
+        row.calendarAnchor ?? _nextOccurrenceOfWeekday(row.weekday, now);
     initial = DateTime(initial.year, initial.month, initial.day);
     if (initial.isBefore(today)) {
       initial = _nextOccurrenceOfWeekday(row.weekday, now);
@@ -933,11 +1157,11 @@ class _ScheduleRowEditor extends StatelessWidget {
                             ),
                             Text(
                               'Takvim',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelLarge
+                              style: Theme.of(context).textTheme.labelLarge
                                   ?.copyWith(
-                                    color: Theme.of(context).colorScheme.primary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                   ),
                             ),
                           ],
@@ -957,18 +1181,14 @@ class _ScheduleRowEditor extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => _pickTime(context, true),
-                    child: Text(
-                      'Başlangıç ${_fmt(row.start)}',
-                    ),
+                    child: Text('Başlangıç ${_fmt(row.start)}'),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => _pickTime(context, false),
-                    child: Text(
-                      'Bitiş ${_fmt(row.end)}',
-                    ),
+                    child: Text('Bitiş ${_fmt(row.end)}'),
                   ),
                 ),
               ],
