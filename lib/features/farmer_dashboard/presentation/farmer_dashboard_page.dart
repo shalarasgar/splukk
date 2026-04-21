@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 
+import '../../../core/app_messages.dart';
 import '../../../core/router/app_router.gr.dart';
 import '../../auth/presentation/auth_bloc.dart';
 import '../../listings/domain/listings_domain.dart';
@@ -88,7 +89,47 @@ class FarmerDashboardPage extends StatelessWidget {
                       ),
                       title: Text(l.farmName),
                       subtitle: Text('${l.city} · %${l.availabilityPercent}'),
-                      trailing: const Icon(Icons.chevron_right),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, color: Colors.red),
+                            onPressed: () async {
+                              final ok = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('İlanı Sil'),
+                                  content: const Text('Bu ilanı silmek istediğinize emin misiniz?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(ctx).pop(false),
+                                      child: const Text('İptal'),
+                                    ),
+                                    FilledButton(
+                                      style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                                      onPressed: () => Navigator.of(ctx).pop(true),
+                                      child: const Text('Sil'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (ok == true) {
+                                try {
+                                  await repo.deleteListing(l.id);
+                                  if (context.mounted) {
+                                    showAppSnackBar(context, 'İlan başarıyla silindi');
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    showAppSnackBar(context, 'Hata: $e', isError: true);
+                                  }
+                                }
+                              }
+                            },
+                          ),
+                          const Icon(Icons.chevron_right),
+                        ],
+                      ),
                       onTap: () {
                         context.router.push(
                           FarmerListingFormRoute(listingId: l.id),

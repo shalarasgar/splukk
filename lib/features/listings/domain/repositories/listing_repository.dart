@@ -27,4 +27,6 @@ abstract class ListingRepository {
     required FarmListing listing,
     required List<String> newImageLocalPaths,
   });
+
+  Future<void> deleteListing(String id);
 }

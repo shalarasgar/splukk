@@ -83,4 +83,7 @@ class ListingRepositoryImpl implements ListingRepository {
       mergedSchedule: merged,
     );
   }
+
+  @override
+  Future<void> deleteListing(String id) => _remote.deleteListing(id);
 }

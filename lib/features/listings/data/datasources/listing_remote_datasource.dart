@@ -138,4 +138,8 @@ class ListingRemoteDataSource {
     );
     await ref.update(payload);
   }
+
+  Future<void> deleteListing(String id) async {
+    await _firestore.collection(_collection).doc(id).delete();
+  }
 }
