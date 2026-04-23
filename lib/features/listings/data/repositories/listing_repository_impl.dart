@@ -74,7 +74,7 @@ class ListingRepositoryImpl implements ListingRepository {
         endMinutes: s.endMinutes,
         maxPeople: s.maxPeople,
         bookedCount: booked,
-        specificDate: s.specificDate
+        specificDate: s.specificDate,
       );
     }).toList();
 
@@ -82,6 +82,7 @@ class ListingRepositoryImpl implements ListingRepository {
       listing: listing,
       newImageLocalPaths: newImageLocalPaths,
       mergedSchedule: merged,
+      expiresAt: listing.expiresAt,
     );
   }
 

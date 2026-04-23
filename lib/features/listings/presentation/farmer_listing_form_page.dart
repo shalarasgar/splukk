@@ -444,6 +444,7 @@ class _FarmerListingFormPageState extends State<FarmerListingFormPage> {
           schedule: slots,
           createdAt: ex.createdAt,
           updatedAt: ex.updatedAt,
+          expiresAt: ex.expiresAt,
         );
         await repo.updateListing(
           listing: updated,
@@ -503,6 +504,7 @@ class _FarmerListingFormPageState extends State<FarmerListingFormPage> {
       }).toList(),
       createdAt: _existing?.createdAt ?? DateTime.now(),
       updatedAt: _existing?.updatedAt ?? DateTime.now(),
+      expiresAt: _existing?.expiresAt ?? DateTime.now(),
     );
   }
 

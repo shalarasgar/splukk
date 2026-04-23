@@ -21,6 +21,7 @@ class FarmListingModel {
       schedule: _readSchedule(data['schedule']),
       createdAt: _readDate(data['createdAt']),
       updatedAt: _readDate(data['updatedAt']),
+      expiresAt: _readDate(data['expiresAt']),
     );
   }
 
@@ -39,6 +40,7 @@ class FarmListingModel {
     required List<ListingProductLine> products,
     required List<DayTimeSlot> schedule,
     required FieldValue timestamp,
+    required DateTime expiresAt,
   }) {
     return {
       'farmerUid': farmerUid,
@@ -49,7 +51,9 @@ class FarmListingModel {
       'availabilityPercent': availabilityPercent.clamp(0, 100),
       'availabilityMessageIndex': availabilityMessageIndex,
       'manualClosed': manualClosed,
-      'description': description?.trim().isEmpty == true ? null : description?.trim(),
+      'description': description?.trim().isEmpty == true
+          ? null
+          : description?.trim(),
       'latitude': latitude,
       'longitude': longitude,
       'products': products
@@ -70,17 +74,22 @@ class FarmListingModel {
               'endMinutes': e.endMinutes,
               'maxPeople': e.maxPeople,
               'bookedCount': e.bookedCount,
-              if (e.specificDate != null) 'specificDate': e.specificDate!.millisecondsSinceEpoch,
+              if (e.specificDate != null)
+                'specificDate': e.specificDate!.millisecondsSinceEpoch,
             },
           )
           .toList(),
       'updatedAt': timestamp,
+      'expiresAt': expiresAt,
     };
   }
 
   static List<String> _readStringList(dynamic v) {
     if (v is! List) return [];
-    return v.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
+    return v
+        .map((e) => e?.toString() ?? '')
+        .where((s) => s.isNotEmpty)
+        .toList();
   }
 
   static PickingType _readPickingType(dynamic v) {

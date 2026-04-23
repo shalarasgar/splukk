@@ -14,6 +14,9 @@ class BookingRepository {
         listingId: listingId,
       );
 
+  Future<List<Booking>> getUserBookings({required String userUid}) =>
+      _remote.getUserBookings(userUid: userUid);
+
   Future<void> createBooking({
     required String userUid,
     required String listingId,

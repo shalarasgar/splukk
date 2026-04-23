@@ -27,6 +27,18 @@ class BookingRemoteDataSource {
     return _fromDoc(doc.id, doc.data());
   }
 
+  /// Получить все активные бронирования пользователя
+  Future<List<Booking>> getUserBookings({required String userUid}) async {
+    final snap = await _firestore
+        .collection(_bookings)
+        .where('userUid', isEqualTo: userUid)
+        .get();
+
+    if (snap.docs.isEmpty) return [];
+
+    return snap.docs.map((doc) => _fromDoc(doc.id, doc.data())).toList();
+  }
+
   /// Создать новую бронь и увеличить bookedCount в объявлении
   Future<void> createBooking({
     required String userUid,

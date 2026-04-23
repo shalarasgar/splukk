@@ -52,10 +52,12 @@ class ListingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     DateTime t = now ?? DateTime.now();
     final realNow = DateTime.now();
+    // Если выбранная дата — сегодня, используем реальное текущее время,
+    // чтобы isListingOpenNow корректно определял «открыто сейчас»
     if (t.year == realNow.year &&
         t.month == realNow.month &&
         t.day == realNow.day) {
-       t = realNow;
+      t = realNow;
     }
 
     final open = isListingOpenNow(listing, t);
@@ -73,6 +75,8 @@ class ListingCard extends StatelessWidget {
     final imageUrl = listing.imageUrls.isNotEmpty
         ? listing.imageUrls.first
         : null;
+    // Скрываем только если выбрано "Сегодня" и ферма сейчас закрыта.
+    // Для будущих дат (где время t = 00:00) не скрываем, иначе всё исчезнет.
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),

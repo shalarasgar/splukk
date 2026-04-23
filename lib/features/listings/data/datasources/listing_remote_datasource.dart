@@ -9,8 +9,8 @@ class ListingRemoteDataSource {
   ListingRemoteDataSource({
     FirebaseFirestore? firestore,
     FirebaseStorage? storage,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _storage = storage ?? FirebaseStorage.instance;
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _storage = storage ?? FirebaseStorage.instance;
 
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
@@ -34,15 +34,13 @@ class ListingRemoteDataSource {
         .collection(_collection)
         .where('farmerUid', isEqualTo: farmerUid)
         .snapshots()
-        .map(
-          (snap) {
-            final list = snap.docs
-                .map((d) => FarmListingModel.fromFirestore(d.id, d.data()))
-                .toList();
-            list.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-            return list;
-          },
-        );
+        .map((snap) {
+          final list = snap.docs
+              .map((d) => FarmListingModel.fromFirestore(d.id, d.data()))
+              .toList();
+          list.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+          return list;
+        });
   }
 
   Future<FarmListing?> getListing(String id) async {
@@ -53,16 +51,19 @@ class ListingRemoteDataSource {
     return FarmListingModel.fromFirestore(doc.id, data);
   }
 
-  Future<List<String>> _uploadImages(String listingId, List<String> paths) async {
+  Future<List<String>> _uploadImages(
+    String listingId,
+    List<String> paths,
+  ) async {
     final urls = <String>[];
     var i = 0;
     for (final path in paths) {
       if (path.isEmpty) continue;
       final bytes = await XFile(path).readAsBytes();
       if (bytes.isEmpty) continue;
-      final ref = _storage
-          .ref()
-          .child('farm_listings/$listingId/${DateTime.now().millisecondsSinceEpoch}_$i.jpg');
+      final ref = _storage.ref().child(
+        'farm_listings/$listingId/${DateTime.now().millisecondsSinceEpoch}_$i.jpg',
+      );
       await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
       urls.add(await ref.getDownloadURL());
       i++;
@@ -104,6 +105,7 @@ class ListingRemoteDataSource {
       products: products,
       schedule: schedule,
       timestamp: now,
+      expiresAt: DateTime.now(),
     );
     payload['createdAt'] = now;
     await doc.set(payload);
@@ -114,9 +116,9 @@ class ListingRemoteDataSource {
     required FarmListing listing,
     required List<String> newImageLocalPaths,
     required List<DayTimeSlot> mergedSchedule,
+    required DateTime expiresAt,
   }) async {
-    final extraUrls =
-        await _uploadImages(listing.id, newImageLocalPaths);
+    final extraUrls = await _uploadImages(listing.id, newImageLocalPaths);
     final imageUrls = [...listing.imageUrls, ...extraUrls];
     final ref = _firestore.collection(_collection).doc(listing.id);
     final now = FieldValue.serverTimestamp();
@@ -135,6 +137,7 @@ class ListingRemoteDataSource {
       products: listing.products,
       schedule: mergedSchedule,
       timestamp: now,
+      expiresAt: expiresAt,
     );
     await ref.update(payload);
   }

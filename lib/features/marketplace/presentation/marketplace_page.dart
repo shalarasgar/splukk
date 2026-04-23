@@ -3,11 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import '../../listings/domain/listings_domain.dart';
-import '../../listings/presentation/listing_ui_helpers.dart';
+import 'package:splukk/features/marketplace/presentation/marketplace_controller.dart';
 
 import '../../listings/presentation/widgets/listing_card.dart';
-import 'marketplace_controller.dart';
 
 class MarketplacePage extends GetView<MarketplaceController> {
   const MarketplacePage({super.key});
@@ -87,7 +85,7 @@ class MarketplacePage extends GetView<MarketplaceController> {
             ),
             // Кастомный поиск в "bottom" (будет прилипать к верху)
             bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(80),
+              preferredSize: const Size.fromHeight(85),
               child: _SearchHeader(headerHeight: headerHeight),
             ),
           ),
@@ -308,15 +306,21 @@ class _DateSelector extends GetView<MarketplaceController> {
                         duration: const Duration(milliseconds: 250),
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFF2B8C5F) : Colors.white,
+                          color: isSelected
+                              ? const Color(0xFF2B8C5F)
+                              : Colors.white,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: isSelected ? Colors.transparent : Colors.grey[200]!,
+                            color: isSelected
+                                ? Colors.transparent
+                                : Colors.grey[200]!,
                           ),
                           boxShadow: isSelected
                               ? [
                                   BoxShadow(
-                                    color: const Color(0xFF2B8C5F).withOpacity(0.3),
+                                    color: const Color(
+                                      0xFF2B8C5F,
+                                    ).withOpacity(0.3),
                                     blurRadius: 8,
                                     offset: const Offset(0, 4),
                                   ),
@@ -329,7 +333,9 @@ class _DateSelector extends GetView<MarketplaceController> {
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: isSelected ? Colors.white : const Color(0xFF1A1A1A),
+                            color: isSelected
+                                ? Colors.white
+                                : const Color(0xFF1A1A1A),
                           ),
                         ),
                       ),
@@ -350,15 +356,21 @@ class _DateSelector extends GetView<MarketplaceController> {
                       duration: const Duration(milliseconds: 250),
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFF2B8C5F) : Colors.white,
+                        color: isSelected
+                            ? const Color(0xFF2B8C5F)
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: isSelected ? Colors.transparent : Colors.grey[200]!,
+                          color: isSelected
+                              ? Colors.transparent
+                              : Colors.grey[200]!,
                         ),
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
-                                  color: const Color(0xFF2B8C5F).withOpacity(0.3),
+                                  color: const Color(
+                                    0xFF2B8C5F,
+                                  ).withOpacity(0.3),
                                   blurRadius: 8,
                                   offset: const Offset(0, 4),
                                 ),
@@ -384,7 +396,9 @@ class _DateSelector extends GetView<MarketplaceController> {
                             style: GoogleFonts.outfit(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: isSelected ? Colors.white : const Color(0xFF1A1A1A),
+                              color: isSelected
+                                  ? Colors.white
+                                  : const Color(0xFF1A1A1A),
                             ),
                           ),
                         ],

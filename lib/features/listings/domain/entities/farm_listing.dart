@@ -40,8 +40,14 @@ class DayTimeSlot extends Equatable {
   final DateTime? specificDate;
 
   @override
-  List<Object?> get props =>
-      [weekday, startMinutes, endMinutes, maxPeople, bookedCount, specificDate];
+  List<Object?> get props => [
+    weekday,
+    startMinutes,
+    endMinutes,
+    maxPeople,
+    bookedCount,
+    specificDate,
+  ];
 }
 
 class FarmListing extends Equatable {
@@ -62,6 +68,7 @@ class FarmListing extends Equatable {
     required this.schedule,
     required this.createdAt,
     required this.updatedAt,
+    required this.expiresAt,
   });
 
   final String id;
@@ -71,6 +78,7 @@ class FarmListing extends Equatable {
   final List<String> imageUrls;
   final PickingType pickingType;
   final int availabilityPercent;
+
   /// Seçilen öneri indeksi (o bölgedeki [AvailabilityBand.suggestions] listesi içinde).
   final int? availabilityMessageIndex;
   final bool manualClosed;
@@ -81,24 +89,26 @@ class FarmListing extends Equatable {
   final List<DayTimeSlot> schedule;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final DateTime expiresAt;
 
   @override
   List<Object?> get props => [
-        id,
-        farmerUid,
-        farmName,
-        city,
-        imageUrls,
-        pickingType,
-        availabilityPercent,
-        availabilityMessageIndex,
-        manualClosed,
-        description,
-        latitude,
-        longitude,
-        products,
-        schedule,
-        createdAt,
-        updatedAt,
-      ];
+    id,
+    farmerUid,
+    farmName,
+    city,
+    imageUrls,
+    pickingType,
+    availabilityPercent,
+    availabilityMessageIndex,
+    manualClosed,
+    description,
+    latitude,
+    longitude,
+    products,
+    schedule,
+    createdAt,
+    updatedAt,
+    expiresAt,
+  ];
 }

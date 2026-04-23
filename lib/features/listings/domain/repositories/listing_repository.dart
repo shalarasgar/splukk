@@ -30,8 +30,5 @@ abstract class ListingRepository {
 
   Future<void> deleteListing(String id);
 
-  Future<void> bookSlot({
-    required String listingId,
-    required DayTimeSlot slot,
-  });
+  Future<void> bookSlot({required String listingId, required DayTimeSlot slot});
 }
