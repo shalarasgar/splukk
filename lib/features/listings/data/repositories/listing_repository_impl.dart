@@ -74,6 +74,7 @@ class ListingRepositoryImpl implements ListingRepository {
         endMinutes: s.endMinutes,
         maxPeople: s.maxPeople,
         bookedCount: booked,
+        specificDate: s.specificDate
       );
     }).toList();
 
@@ -86,4 +87,18 @@ class ListingRepositoryImpl implements ListingRepository {
 
   @override
   Future<void> deleteListing(String id) => _remote.deleteListing(id);
+
+  @override
+  Future<void> bookSlot({
+    required String listingId,
+    required DayTimeSlot slot,
+  }) {
+    return _remote.bookSlot(
+      listingId: listingId,
+      weekday: slot.weekday,
+      startMinutes: slot.startMinutes,
+      endMinutes: slot.endMinutes,
+      specificDateMs: slot.specificDate?.millisecondsSinceEpoch,
+    );
+  }
 }

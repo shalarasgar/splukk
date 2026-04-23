@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -48,12 +50,20 @@ class ListingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = now ?? DateTime.now();
+    DateTime t = now ?? DateTime.now();
+    final realNow = DateTime.now();
+    if (t.year == realNow.year &&
+        t.month == realNow.month &&
+        t.day == realNow.day) {
+       t = realNow;
+    }
+
     final open = isListingOpenNow(listing, t);
     final hours = todayHoursSummary(listing, t);
     final pct = listing.availabilityPercent.clamp(0, 100);
     final headline = availabilityHeadlineForListing(listing);
     final bandIdx = bandIndexForListing(listing);
+    log('open=======>>>>$open');
 
     // Используем наш "премиальный" зеленый для хороших состояний
     final accentGreen = const Color(0xFF2B8C5F);
@@ -212,23 +222,28 @@ class ListingCard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            Builder(builder: (context) {
-                              final d = getListingNextAvailableDate(listing, t);
-                              return Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '${d.day} ${monthNameTr(d.month)}',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.grey[600],
+                            Builder(
+                              builder: (context) {
+                                final d = getListingNextAvailableDate(
+                                  listing,
+                                  t,
+                                );
+                                return Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '${d.day} ${monthNameTr(d.month)}',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey[600],
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              );
-                            }),
+                                  ],
+                                );
+                              },
+                            ),
                           ],
                         ),
                       ],

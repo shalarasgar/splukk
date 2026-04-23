@@ -142,4 +142,58 @@ class ListingRemoteDataSource {
   Future<void> deleteListing(String id) async {
     await _firestore.collection(_collection).doc(id).delete();
   }
+
+  Future<void> bookSlot({
+    required String listingId,
+    required int weekday,
+    required int startMinutes,
+    required int endMinutes,
+    int? specificDateMs,
+  }) async {
+    final docRef = _firestore.collection(_collection).doc(listingId);
+
+    await _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(docRef);
+      if (!snapshot.exists) {
+        throw Exception('İlan bulunamadı');
+      }
+
+      final data = snapshot.data()!;
+      final scheduleRaw = data['schedule'];
+      if (scheduleRaw is! List) {
+        throw Exception('Geçersiz çalışma programı');
+      }
+
+      int slotIndex = -1;
+      for (int i = 0; i < scheduleRaw.length; i++) {
+        final item = scheduleRaw[i];
+        if (item is! Map) continue;
+        if (item['weekday'] == weekday &&
+            item['startMinutes'] == startMinutes &&
+            item['endMinutes'] == endMinutes &&
+            item['specificDate'] == specificDateMs) {
+          slotIndex = i;
+          break;
+        }
+      }
+
+      if (slotIndex == -1) {
+        throw Exception('Seçili saat aralığı bulunamadı veya değiştirilmiş');
+      }
+
+      final targetSlot = Map<String, dynamic>.from(scheduleRaw[slotIndex]);
+      final maxPeople = targetSlot['maxPeople'] as int? ?? 0;
+      final bookedCount = targetSlot['bookedCount'] as int? ?? 0;
+
+      if (bookedCount >= maxPeople) {
+        throw Exception('Bu saat aralığı için kapasite doldu');
+      }
+
+      targetSlot['bookedCount'] = bookedCount + 1;
+      final newSchedule = List<dynamic>.from(scheduleRaw);
+      newSchedule[slotIndex] = targetSlot;
+
+      transaction.update(docRef, {'schedule': newSchedule});
+    });
+  }
 }
