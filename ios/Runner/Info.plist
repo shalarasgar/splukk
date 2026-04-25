@@ -78,6 +78,16 @@
 				<string>app-1-720436005385-ios-b3f4de6c4ddf9ecc6346d8</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>no.vipps.splukk</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>splukk</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>

@@ -13,9 +13,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc({
     required PhoneAuthRepository phoneAuthRepository,
     required UserProfileRepository userProfileRepository,
-  })  : _phoneAuthRepository = phoneAuthRepository,
-        _userProfileRepository = userProfileRepository,
-        super(const AuthState.unauthenticated()) {
+    required SocialAuthRepository socialAuthRepository,
+  }) : _phoneAuthRepository = phoneAuthRepository,
+       _userProfileRepository = userProfileRepository,
+       _socialAuthRepository = socialAuthRepository,
+       super(const AuthState.unauthenticated()) {
     on<AuthStarted>(_onStarted);
     on<AuthSignOutRequested>(_onSignOutRequested);
     on<AuthPhoneRequested>(_onPhoneRequested);
@@ -24,11 +26,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthFlowCancelled>(_onFlowCancelled);
     on<AuthVerificationCodeSent>(_onVerificationCodeSent);
     on<AuthVerificationFailed>(_onVerificationFailed);
+    on<AuthVippsLoginRequested>(_onVippsLoginRequested);
+    on<AuthGoogleLoginRequested>(_onGoogleLoginRequested);
     add(const AuthStarted());
   }
 
   final PhoneAuthRepository _phoneAuthRepository;
   final UserProfileRepository _userProfileRepository;
+  final SocialAuthRepository _socialAuthRepository;
 
   String? _verificationId;
   AuthFlowIntent _intent = AuthFlowIntent.login;
@@ -111,6 +116,83 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     _clearPending();
   }
 
+  Future<void> _onVippsLoginRequested(
+    AuthVippsLoginRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(const AuthState.verifyingPhone());
+
+    try {
+      final result = await _socialAuthRepository.signInWithVipps();
+
+      if (result == null) {
+        emit(const AuthState.failure('Vipps login cancelled'));
+        emit(const AuthState.unauthenticated());
+        return;
+      }
+
+      // TODO: Exchange authorization code for tokens on backend
+      // TODO: Fetch user info from Vipps using access token
+      // TODO: Check if user exists in Firestore
+      // TODO: If new user, show role selection (consumer/farmer)
+      // TODO: If existing user, authenticate automatically
+
+      emit(
+        const AuthState.failure(
+          'Vipps integration requires backend implementation. '
+          'Please configure client_id and implement token exchange.',
+        ),
+      );
+      emit(const AuthState.unauthenticated());
+    } catch (e) {
+      developer.log(
+        'AuthBloc Vipps login failed',
+        name: 'splukk.vipps_auth',
+        error: e,
+      );
+      emit(AuthState.failure('Vipps login failed: $e'));
+      emit(const AuthState.unauthenticated());
+    }
+  }
+
+  Future<void> _onGoogleLoginRequested(
+    AuthGoogleLoginRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(const AuthState.verifyingPhone());
+
+    try {
+      final account = await _socialAuthRepository.signInWithGoogle();
+
+      if (account == null) {
+        emit(const AuthState.failure('Google login cancelled'));
+        emit(const AuthState.unauthenticated());
+        return;
+      }
+
+      // TODO: Verify ID token on backend
+      // TODO: Check if user exists in Firestore
+      // TODO: If new user, show role selection (consumer/farmer)
+      // TODO: If existing user, authenticate automatically
+
+      emit(
+        const AuthState.failure(
+          'Google integration requires backend implementation. '
+          'Please configure client_id and implement token verification.',
+        ),
+      );
+      emit(const AuthState.unauthenticated());
+    } catch (e) {
+      developer.log(
+        'AuthBloc Google login failed',
+        name: 'splukk.google_auth',
+        error: e,
+      );
+      emit(AuthState.failure('Google login failed: $e'));
+      emit(const AuthState.unauthenticated());
+    }
+  }
+
   Future<void> _onPhoneRequested(
     AuthPhoneRequested event,
     Emitter<AuthState> emit,
@@ -145,9 +227,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final farmCity = _pendingFarmCity ?? '';
       final farmPostalCode = _pendingFarmPostalCode ?? '';
       if (street.isEmpty || streetNo.isEmpty) {
-        emit(const AuthState.failure(
-          'Cadde ve bina/kapı numarası zorunludur',
-        ));
+        emit(const AuthState.failure('Cadde ve bina/kapı numarası zorunludur'));
         emit(const AuthState.unauthenticated());
         _clearPending();
         return;
@@ -156,9 +236,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           farmState.isEmpty ||
           farmCity.isEmpty ||
           farmPostalCode.isEmpty) {
-        emit(const AuthState.failure(
-          'Çiftlik adı, ülke, eyalet, şehir ve posta kodu zorunludur',
-        ));
+        emit(
+          const AuthState.failure(
+            'Çiftlik adı, ülke, eyalet, şehir ve posta kodu zorunludur',
+          ),
+        );
         emit(const AuthState.unauthenticated());
         _clearPending();
         return;
@@ -257,9 +339,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           final profile = await _userProfileRepository.getProfile(user.uid);
           if (profile == null) {
             await _phoneAuthRepository.signOut();
-            emit(const AuthState.failure(
-              'Bu numara ile kayıtlı hesap bulunamadı. Önce kayıt olun.',
-            ));
+            emit(
+              const AuthState.failure(
+                'Bu numara ile kayıtlı hesap bulunamadı. Önce kayıt olun.',
+              ),
+            );
             emit(const AuthState.unauthenticated());
             return;
           }
@@ -311,14 +395,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               farmLat == null ||
               farmLng == null) {
             await _phoneAuthRepository.signOut();
-            emit(const AuthState.failure(
-              'Çiftlik kaydı için gerekli adres bilgileri eksik',
-            ));
+            emit(
+              const AuthState.failure(
+                'Çiftlik kaydı için gerekli adres bilgileri eksik',
+              ),
+            );
             emit(const AuthState.unauthenticated());
             return;
           }
-          final existingFarmer =
-              await _userProfileRepository.getProfile(user.uid);
+          final existingFarmer = await _userProfileRepository.getProfile(
+            user.uid,
+          );
           if (existingFarmer != null) {
             emit(AuthState.authenticated(user: user, profile: existingFarmer));
             return;
@@ -337,8 +424,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             farmLongitude: farmLng,
             localLogoPath: _pendingLogoPath,
           );
-          final createdFarmer =
-              await _userProfileRepository.getProfile(user.uid);
+          final createdFarmer = await _userProfileRepository.getProfile(
+            user.uid,
+          );
           emit(AuthState.authenticated(user: user, profile: createdFarmer!));
       }
     } catch (e, st) {

@@ -40,10 +40,26 @@ void initDependencies() {
     PhoneAuthRepositoryImpl(),
     permanent: true,
   );
+  Get.put<GoogleAuthService>(
+    GoogleAuthService(),
+    permanent: true,
+  );
+  Get.put<VippsAuthService>(
+    VippsAuthService(),
+    permanent: true,
+  );
+  Get.put<SocialAuthRepository>(
+    SocialAuthRepositoryImpl(
+      googleAuthService: Get.find<GoogleAuthService>(),
+      vippsAuthService: Get.find<VippsAuthService>(),
+    ),
+    permanent: true,
+  );
   Get.put<AuthBloc>(
     AuthBloc(
       phoneAuthRepository: Get.find<PhoneAuthRepository>(),
       userProfileRepository: Get.find<UserProfileRepository>(),
+      socialAuthRepository: Get.find<SocialAuthRepository>(),
     ),
     permanent: true,
   );

@@ -46,18 +46,18 @@ class AuthPhoneRequested extends AuthEvent {
 
   @override
   List<Object?> get props => [
-        phoneNumber,
-        intent,
-        fullName,
-        farmName,
-        farmCountry,
-        farmState,
-        farmCity,
-        farmPostalCode,
-        farmStreet,
-        farmStreetNumber,
-        logoLocalPath,
-      ];
+    phoneNumber,
+    intent,
+    fullName,
+    farmName,
+    farmCountry,
+    farmState,
+    farmCity,
+    farmPostalCode,
+    farmStreet,
+    farmStreetNumber,
+    logoLocalPath,
+  ];
 }
 
 class AuthSmsCodeSubmitted extends AuthEvent {
@@ -98,4 +98,12 @@ class AuthVerificationFailed extends AuthEvent {
 
   @override
   List<Object?> get props => [message];
+}
+
+class AuthVippsLoginRequested extends AuthEvent {
+  const AuthVippsLoginRequested();
+}
+
+class AuthGoogleLoginRequested extends AuthEvent {
+  const AuthGoogleLoginRequested();
 }
