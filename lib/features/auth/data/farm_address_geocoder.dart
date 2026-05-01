@@ -86,7 +86,9 @@ Future<Location?> _nominatimSearch(String q) async {
     if (first is! Map<String, dynamic>) return null;
     final lat = double.tryParse('${first['lat']}');
     final lon = double.tryParse('${first['lon']}');
-    if (lat == null || lon == null) return null;
+    if (lat == null || lon == null || !lat.isFinite || !lon.isFinite) {
+      return null;
+    }
     return Location(
       latitude: lat,
       longitude: lon,

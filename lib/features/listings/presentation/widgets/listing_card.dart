@@ -1,13 +1,11 @@
 import 'dart:developer';
-
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:splukk/core/router/app_router.gr.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import '../../../../core/constants/products.dart';
-import '../../../../core/router/app_router.gr.dart';
 import '../../domain/listings_domain.dart';
 import '../listing_ui_helpers.dart';
 
@@ -170,15 +168,41 @@ class ListingCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '${listing.farmName} • ${listing.city}',
-                          style: GoogleFonts.outfit(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF1A1A1A),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${listing.farmName} • ${listing.city}',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF1A1A1A),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            // Rating
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.star_rounded,
+                              color: Colors.amber,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '4.8',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF1A1A1A),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -287,6 +311,28 @@ class ListingCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 16),
+                  IconButton(
+                    onPressed: () {
+                      context.router.push(
+                        ChatRoute(
+                          listingId: listing.id,
+                          farmerName: listing.farmName,
+                          farmerUid: listing.farmerUid,
+                        ),
+                      );
+                    },
+                    icon: const Icon(
+                      LucideIcons.messageCircle,
+                      color: Color(0xFF2B8C5F),
+                    ),
+                    style: IconButton.styleFrom(
+                      backgroundColor: const Color(0xFF2B8C5F).withOpacity(0.1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   ElevatedButton.icon(
                     onPressed: () => _openMaps(context),
                     icon: const Icon(LucideIcons.navigation, size: 18),

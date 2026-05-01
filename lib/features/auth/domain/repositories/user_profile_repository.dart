@@ -23,4 +23,6 @@ abstract class UserProfileRepository {
     required double farmLongitude,
     String? localLogoPath,
   });
+
+  Future<void> updateProfile(UserProfile profile, {String? localLogoPath});
 }

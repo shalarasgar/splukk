@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 
 class PremiumTextField extends StatelessWidget {
   final TextEditingController controller;
+  final int? maxLines;
   final String label;
   final String? hint;
   final TextInputType? keyboardType;
   final TextCapitalization textCapitalization;
 
   const PremiumTextField({
+    this.maxLines,
     super.key,
     required this.controller,
     required this.label,
@@ -19,6 +21,7 @@ class PremiumTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextField(
+      maxLines: maxLines,
       controller: controller,
       keyboardType: keyboardType,
       textCapitalization: textCapitalization,

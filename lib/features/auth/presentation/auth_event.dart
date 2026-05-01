@@ -104,6 +104,12 @@ class AuthVippsLoginRequested extends AuthEvent {
   const AuthVippsLoginRequested();
 }
 
-class AuthGoogleLoginRequested extends AuthEvent {
-  const AuthGoogleLoginRequested();
+class AuthProfileUpdated extends AuthEvent {
+  const AuthProfileUpdated(this.profile, {this.logoLocalPath});
+
+  final UserProfile profile;
+  final String? logoLocalPath;
+
+  @override
+  List<Object?> get props => [profile, logoLocalPath];
 }

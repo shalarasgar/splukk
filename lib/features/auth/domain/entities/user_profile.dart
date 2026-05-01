@@ -20,6 +20,11 @@ class UserProfile extends Equatable {
     this.farmLatitude,
     this.farmLongitude,
     this.logoUrl,
+    this.bio,
+    this.alternativePhone,
+    this.socialInstagram,
+    this.socialFacebook,
+    this.bankIban,
     required this.createdAt,
   });
 
@@ -40,7 +45,57 @@ class UserProfile extends Equatable {
   final double? farmLatitude;
   final double? farmLongitude;
   final String? logoUrl;
+  final String? bio;
+  final String? alternativePhone;
+  final String? socialInstagram;
+  final String? socialFacebook;
+  final String? bankIban;
   final DateTime createdAt;
+
+  UserProfile copyWith({
+    String? fullName,
+    String? farmName,
+    String? farmAddress,
+    String? farmCountry,
+    String? farmState,
+    String? farmCity,
+    String? farmPostalCode,
+    String? farmStreet,
+    String? farmStreetNumber,
+    double? farmLatitude,
+    double? farmLongitude,
+    String? logoUrl,
+    String? bio,
+    String? alternativePhone,
+    String? socialInstagram,
+    String? socialFacebook,
+    String? bankIban,
+  }) {
+    return UserProfile(
+      uid: uid,
+      documentId: documentId,
+      role: role,
+      phone: phone,
+      fullName: fullName ?? this.fullName,
+      farmName: farmName ?? this.farmName,
+      farmAddress: farmAddress ?? this.farmAddress,
+      farmCountry: farmCountry ?? this.farmCountry,
+      farmState: farmState ?? this.farmState,
+      farmCity: farmCity ?? this.farmCity,
+      farmPostalCode: farmPostalCode ?? this.farmPostalCode,
+      farmStreet: farmStreet ?? this.farmStreet,
+      farmStreetNumber: farmStreetNumber ?? this.farmStreetNumber,
+      farmLatitude: farmLatitude ?? this.farmLatitude,
+      farmLongitude: farmLongitude ?? this.farmLongitude,
+      logoUrl: logoUrl ?? this.logoUrl,
+      bio: bio ?? this.bio,
+      alternativePhone: alternativePhone ?? this.alternativePhone,
+      socialInstagram: socialInstagram ?? this.socialInstagram,
+      socialFacebook: socialFacebook ?? this.socialFacebook,
+      bankIban: bankIban ?? this.bankIban,
+      createdAt: createdAt,
+    );
+  }
 
   /// Tek satırda gösterim: yapılandırılmış alanlar veya eski `farmAddress`.
   String? get farmLocationSummary {
@@ -99,6 +154,11 @@ class UserProfile extends Equatable {
         farmLatitude,
         farmLongitude,
         logoUrl,
+        bio,
+        alternativePhone,
+        socialInstagram,
+        socialFacebook,
+        bankIban,
         createdAt,
       ];
 }

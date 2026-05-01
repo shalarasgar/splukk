@@ -61,6 +61,10 @@
 	</array>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Çiftlik logosu seçmek için fotoğraflarınıza erişim gerekir.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Konumunuzu bulmak için konum izni gerekir.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Konumunuzu bulmak için konum izni gerekir.</string>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

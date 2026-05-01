@@ -1,16 +1,15 @@
 import 'package:flutter_appauth/flutter_appauth.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Vipps OAuth 2.0 service
 /// TODO: Replace placeholders with actual credentials from Vipps Developer Portal
 class VippsAuthService {
-  // TODO: Insert your Vipps Client ID from developer portal
-  static const String clientId = 'YOUR_VIPPS_CLIENT_ID';
+  String get clientId => dotenv.env['VIPPS_CLIENT_ID'] ?? '';
 
   // TODO: Set to true for production, false for test environment
   static const bool isProduction = false;
 
-  // TODO: Insert your subscription key if needed for API calls
-  static const String subscriptionKey = 'YOUR_SUBSCRIPTION_KEY';
+  String get subscriptionKey => dotenv.env['VIPPS_SUBSCRIPTION_KEY'] ?? '';
 
   static String get _authEndpoint {
     if (isProduction) {

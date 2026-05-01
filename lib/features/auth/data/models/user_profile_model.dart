@@ -26,8 +26,38 @@ class UserProfileModel {
       farmLatitude: _readDouble(data['farmLatitude']),
       farmLongitude: _readDouble(data['farmLongitude']),
       logoUrl: data['logoUrl'] as String?,
+      bio: data['bio'] as String?,
+      alternativePhone: data['alternativePhone'] as String?,
+      socialInstagram: data['socialInstagram'] as String?,
+      socialFacebook: data['socialFacebook'] as String?,
+      bankIban: data['bankIban'] as String?,
       createdAt: _readDate(data['createdAt']),
     );
+  }
+
+  static Map<String, dynamic> toFirestore(UserProfile profile) {
+    return {
+      'role': profile.role.name,
+      'phone': profile.phone,
+      'fullName': profile.fullName,
+      'farmName': profile.farmName,
+      'farmAddress': profile.farmAddress,
+      'farmCountry': profile.farmCountry,
+      'farmState': profile.farmState,
+      'farmCity': profile.farmCity,
+      'farmPostalCode': profile.farmPostalCode,
+      'farmStreet': profile.farmStreet,
+      'farmStreetNumber': profile.farmStreetNumber,
+      'farmLatitude': profile.farmLatitude,
+      'farmLongitude': profile.farmLongitude,
+      'logoUrl': profile.logoUrl,
+      'bio': profile.bio,
+      'alternativePhone': profile.alternativePhone,
+      'socialInstagram': profile.socialInstagram,
+      'socialFacebook': profile.socialFacebook,
+      'bankIban': profile.bankIban,
+      'createdAt': Timestamp.fromDate(profile.createdAt),
+    };
   }
 
   static DateTime _readDate(dynamic value) {
@@ -38,9 +68,14 @@ class UserProfileModel {
 
   static double? _readDouble(dynamic value) {
     if (value == null) return null;
-    if (value is double) return value;
-    if (value is int) return value.toDouble();
-    if (value is num) return value.toDouble();
-    return null;
+    double? d;
+    if (value is double) {
+      d = value;
+    } else if (value is int) {
+      d = value.toDouble();
+    } else if (value is num) {
+      d = value.toDouble();
+    }
+    return (d != null && d.isFinite) ? d : null;
   }
 }

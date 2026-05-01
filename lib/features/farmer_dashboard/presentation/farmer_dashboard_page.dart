@@ -1,7 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get/get.dart';
+import '../../../core/di/dependencies.dart';
 
 import '../../../core/app_messages.dart';
 import '../../../core/router/app_router.gr.dart';
@@ -15,7 +15,7 @@ class FarmerDashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final uid = context.watch<AuthBloc>().state.profile?.uid;
-    final repo = Get.find<ListingRepository>();
+    final repo = sl<ListingRepository>();
 
     return Scaffold(
       appBar: AppBar(

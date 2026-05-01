@@ -1,16 +1,22 @@
 import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:flutter/services.dart';
 import 'package:splukk/core/constants/products.dart';
 import 'package:splukk/core/router/app_router.gr.dart';
+import 'package:splukk/core/utils/exit_dialog.dart';
 import 'package:splukk/features/listings/presentation/listing_ui_helpers.dart';
+import 'package:splukk/features/shell/presentation/main_shell_page.dart';
+import '../../../core/di/dependencies.dart';
+import '../../auth/presentation/auth_bloc.dart';
 import '../domain/entities/my_pick_item.dart';
-import 'my_picks_controller.dart';
+import 'my_picks_cubit.dart';
+import 'my_picks_state.dart';
 
 @RoutePage()
 class MyPicksPage extends StatelessWidget {
@@ -18,61 +24,105 @@ class MyPicksPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<MyPicksController>();
+    return BlocProvider(
+      create: (context) {
+        final uid = context.read<AuthBloc>().state.profile?.uid;
+        return sl<MyPicksCubit>()..loadMyPicks(uid);
+      },
+      child: const _MyPicksView(),
+    );
+  }
+}
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: Stack(
-        children: [
-          // Background Decorative Elements
-          Positioned(
-            top: -100,
-            right: -100,
-            child: _CircleBlur(color: const Color(0xFF2B8C5F).withOpacity(0.1), size: 300),
-          ),
-          Positioned(
-            bottom: -50,
-            left: -50,
-            child: _CircleBlur(color: Colors.orange.withOpacity(0.05), size: 250),
-          ),
+class _MyPicksView extends StatelessWidget {
+  const _MyPicksView({super.key});
 
-          SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
-                Expanded(
-                  child: Obx(() {
-                    if (controller.isLoading.value) {
-                      return const Center(child: CircularProgressIndicator(color: Color(0xFF2B8C5F)));
-                    }
-
-                    if (controller.errorMessage.value != null) {
-                      return _buildErrorState(controller);
-                    }
-
-                    if (controller.myPicks.isEmpty) {
-                      return _buildEmptyState();
-                    }
-
-                    return RefreshIndicator(
-                      color: const Color(0xFF2B8C5F),
-                      onRefresh: controller.loadMyPicks,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
-                        itemCount: controller.myPicks.length,
-                        itemBuilder: (context, index) {
-                          return MyPickTicketCard(item: controller.myPicks[index]);
-                        },
-                      ),
-                    );
-                  }),
-                ),
-              ],
+  @override
+  Widget build(BuildContext context) {
+    return Builder(
+      builder: (context) {
+        final isActive = ActiveTabProvider.of(context) == 1;
+        return PopScope(
+          canPop: !isActive,
+          onPopInvokedWithResult: (didPop, result) async {
+            if (didPop || !isActive) return;
+        final shouldExit = await showExitConfirmationDialog(context);
+        if (shouldExit && context.mounted) {
+          SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
+        body: Stack(
+          children: [
+            // Background Decorative Elements
+            Positioned(
+              top: -100,
+              right: -100,
+              child: _CircleBlur(
+                color: const Color(0xFF2B8C5F).withOpacity(0.1),
+                size: 300,
+              ),
             ),
-          ),
-        ],
+            Positioned(
+              bottom: -50,
+              left: -50,
+              child: _CircleBlur(
+                color: Colors.orange.withOpacity(0.05),
+                size: 250,
+              ),
+            ),
+
+            SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  Expanded(
+                    child: BlocBuilder<MyPicksCubit, MyPicksState>(
+                      builder: (context, state) {
+                        if (state.isLoading) {
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF2B8C5F),
+                            ),
+                          );
+                        }
+
+                        if (state.errorMessage != null) {
+                          return _buildErrorState(context, state.errorMessage!);
+                        }
+
+                        if (state.items.isEmpty) {
+                          return _buildEmptyState();
+                        }
+
+                        return RefreshIndicator(
+                          color: const Color(0xFF2B8C5F),
+                          onRefresh: () => context
+                              .read<MyPicksCubit>()
+                              .loadMyPicks(
+                                context.read<AuthBloc>().state.profile?.uid,
+                              ),
+                          child: ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
+                            itemCount: state.items.length,
+                            itemBuilder: (context, index) {
+                              return MyPickTicketCard(item: state.items[index]);
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
+    );
+      },
     );
   }
 
@@ -93,10 +143,7 @@ class MyPicksPage extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             'Planlanan ziyaretleriniz',
-            style: GoogleFonts.inter(
-              fontSize: 15,
-              color: Colors.grey[600],
-            ),
+            style: GoogleFonts.inter(fontSize: 15, color: Colors.grey[600]),
           ),
         ],
       ),
@@ -128,17 +175,22 @@ class MyPicksPage extends StatelessWidget {
     );
   }
 
-  Widget _buildErrorState(MyPicksController controller) {
+  Widget _buildErrorState(BuildContext context, String error) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
           const SizedBox(height: 16),
-          Text(controller.errorMessage.value ?? 'Bir hata oluştu'),
+          Text(error),
           TextButton(
-            onPressed: controller.loadMyPicks,
-            child: const Text('Tekrar Dene', style: TextStyle(color: Color(0xFF2B8C5F))),
+            onPressed: () => context.read<MyPicksCubit>().loadMyPicks(
+              context.read<AuthBloc>().state.profile?.uid,
+            ),
+            child: const Text(
+              'Tekrar Dene',
+              style: TextStyle(color: Color(0xFF2B8C5F)),
+            ),
           ),
         ],
       ),
@@ -205,7 +257,9 @@ class MyPickTicketCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(16),
                           image: item.listing.imageUrls.isNotEmpty
                               ? DecorationImage(
-                                  image: NetworkImage(item.listing.imageUrls.first),
+                                  image: NetworkImage(
+                                    item.listing.imageUrls.first,
+                                  ),
                                   fit: BoxFit.cover,
                                 )
                               : null,
@@ -240,7 +294,11 @@ class MyPickTicketCard extends StatelessWidget {
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                Icon(LucideIcons.mapPin, size: 14, color: Colors.grey[500]),
+                                Icon(
+                                  LucideIcons.mapPin,
+                                  size: 14,
+                                  color: Colors.grey[500],
+                                ),
                                 const SizedBox(width: 4),
                                 Text(
                                   item.listing.city,
@@ -304,11 +362,15 @@ class MyPickTicketCard extends StatelessWidget {
                               label: const Text('Harita'),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: accentColor,
-                                side: BorderSide(color: accentColor.withOpacity(0.3)),
+                                side: BorderSide(
+                                  color: accentColor.withOpacity(0.3),
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                               ),
                             ),
                           ),
@@ -316,7 +378,11 @@ class MyPickTicketCard extends StatelessWidget {
                           Expanded(
                             child: ElevatedButton(
                               onPressed: () {
-                                context.router.push(ListingDetailRoute(listingId: item.listing.id));
+                                context.router.push(
+                                  ListingDetailRoute(
+                                    listingId: item.listing.id,
+                                  ),
+                                );
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: accentColor,
@@ -325,7 +391,9 @@ class MyPickTicketCard extends StatelessWidget {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                               ),
                               child: const Text('Detaylar'),
                             ),
@@ -345,10 +413,10 @@ class MyPickTicketCard extends StatelessWidget {
 
   Widget _buildProductsRow() {
     if (item.listing.products.isEmpty) return const SizedBox.shrink();
-    
+
     // Show first 3 products
     final displayed = item.listing.products.take(3).toList();
-    
+
     return Wrap(
       spacing: 6,
       children: displayed.map((p) {
@@ -515,10 +583,7 @@ class _CircleBlur extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
         child: Container(color: Colors.transparent),

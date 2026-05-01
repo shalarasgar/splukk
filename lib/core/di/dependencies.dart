@@ -1,4 +1,4 @@
-import 'package:get/get.dart';
+import 'package:get_it/get_it.dart';
 import 'package:splukk/features/listings/data/datasources/listing_remote_datasource.dart';
 import 'package:splukk/features/listings/data/repositories/listing_repository_impl.dart';
 
@@ -6,74 +6,80 @@ import 'package:splukk/features/auth/data/auth_data.dart';
 import 'package:splukk/features/auth/domain/auth_domain.dart';
 import 'package:splukk/features/auth/presentation/auth_bloc.dart';
 import 'package:splukk/features/bookings/data/booking_remote_datasource.dart';
-import 'package:splukk/features/bookings/data/booking_repository.dart';
-import 'package:splukk/features/listings/domain/listings_domain.dart';
+import 'package:splukk/features/auth/domain/services/geocoder_service.dart';
+import 'package:splukk/features/auth/data/services/geocoder_service_impl.dart';
+import 'package:splukk/features/listings/domain/repositories/listing_repository.dart';
+import 'package:splukk/features/marketplace/domain/usecases/filter_listings_usecase.dart';
+import 'package:splukk/features/auth/domain/usecases/get_public_profile.dart';
+import 'package:splukk/features/bookings/domain/repositories/booking_repository.dart';
+import 'package:splukk/features/bookings/data/repositories/booking_repository_impl.dart';
+import 'package:splukk/features/marketplace/presentation/marketplace_cubit.dart';
 import 'package:splukk/features/my_picks/domain/usecases/get_my_picks_usecase.dart';
-import 'package:splukk/features/my_picks/presentation/my_picks_controller.dart';
+import 'package:splukk/features/my_picks/presentation/my_picks_cubit.dart';
+import 'package:splukk/features/profile/presentation/public_profile/public_profile_bloc.dart';
+import 'package:splukk/core/services/link_launcher_service.dart';
+
+final sl = GetIt.instance;
 
 void initDependencies() {
-  Get.put<UserProfileRemoteDataSource>(
-    UserProfileRemoteDataSource(),
-    permanent: true,
+  // Data Sources
+  sl.registerLazySingleton<UserProfileRemoteDataSource>(
+    () => UserProfileRemoteDataSource(),
   );
-  Get.put<UserProfileRepository>(
-    UserProfileRepositoryImpl(Get.find<UserProfileRemoteDataSource>()),
-    permanent: true,
+  sl.registerLazySingleton<ListingRemoteDataSource>(
+    () => ListingRemoteDataSource(),
   );
-  Get.put<ListingRemoteDataSource>(
-    ListingRemoteDataSource(),
-    permanent: true,
+  sl.registerLazySingleton<BookingRemoteDataSource>(
+    () => BookingRemoteDataSource(),
   );
-  Get.put<ListingRepository>(
-    ListingRepositoryImpl(Get.find<ListingRemoteDataSource>()),
-    permanent: true,
+
+  // Repositories
+  sl.registerLazySingleton<UserProfileRepository>(
+    () => UserProfileRepositoryImpl(sl()),
   );
-  Get.put<BookingRemoteDataSource>(
-    BookingRemoteDataSource(),
-    permanent: true,
+  sl.registerLazySingleton<ListingRepository>(
+    () => ListingRepositoryImpl(sl()),
   );
-  Get.put<BookingRepository>(
-    BookingRepository(Get.find<BookingRemoteDataSource>()),
-    permanent: true,
+  sl.registerLazySingleton<BookingRepository>(
+    () => BookingRepositoryImpl(sl()),
   );
-  Get.put<PhoneAuthRepository>(
-    PhoneAuthRepositoryImpl(),
-    permanent: true,
+  sl.registerLazySingleton<PhoneAuthRepository>(
+    () => PhoneAuthRepositoryImpl(),
   );
-  Get.put<GoogleAuthService>(
-    GoogleAuthService(),
-    permanent: true,
+
+  // Services
+  sl.registerLazySingleton<GeocoderService>(() => GeocoderServiceImpl());
+  sl.registerLazySingleton<VippsAuthService>(() => VippsAuthService());
+  sl.registerLazySingleton<SocialAuthRepository>(
+    () => SocialAuthRepositoryImpl(vippsAuthService: sl()),
   );
-  Get.put<VippsAuthService>(
-    VippsAuthService(),
-    permanent: true,
+  sl.registerLazySingleton<LinkLauncherService>(() => LinkLauncherServiceImpl());
+
+  // UseCases
+  sl.registerLazySingleton<GetMyPicksUseCase>(
+    () => GetMyPicksUseCase(bookingRepository: sl(), listingRepository: sl()),
   );
-  Get.put<SocialAuthRepository>(
-    SocialAuthRepositoryImpl(
-      googleAuthService: Get.find<GoogleAuthService>(),
-      vippsAuthService: Get.find<VippsAuthService>(),
-    ),
-    permanent: true,
+  sl.registerLazySingleton<FilterListingsUseCase>(() => FilterListingsUseCase());
+  sl.registerLazySingleton<GetPublicProfile>(() => GetPublicProfile(sl()));
+
+  // BLoCs / Cubits
+  sl.registerFactory<MarketplaceCubit>(
+    () => MarketplaceCubit(repo: sl(), filterUseCase: sl()),
   );
-  Get.put<AuthBloc>(
-    AuthBloc(
-      phoneAuthRepository: Get.find<PhoneAuthRepository>(),
-      userProfileRepository: Get.find<UserProfileRepository>(),
-      socialAuthRepository: Get.find<SocialAuthRepository>(),
-    ),
-    permanent: true,
+
+  sl.registerFactory<MyPicksCubit>(
+    () => MyPicksCubit(getMyPicksUseCase: sl()),
   );
-  Get.put<GetMyPicksUseCase>(
-    GetMyPicksUseCase(
-      bookingRepository: Get.find<BookingRepository>(),
-      listingRepository: Get.find<ListingRepository>(),
-    ),
-    permanent: true,
+  sl.registerFactory<PublicProfileBloc>(
+    () => PublicProfileBloc(getPublicProfile: sl()),
   );
-  Get.lazyPut<MyPicksController>(
-    () => MyPicksController(
-      getMyPicksUseCase: Get.find<GetMyPicksUseCase>(),
-      authBloc: Get.find<AuthBloc>(),
+
+  sl.registerLazySingleton<AuthBloc>(
+    () => AuthBloc(
+      phoneAuthRepository: sl(),
+      userProfileRepository: sl(),
+      socialAuthRepository: sl(),
+      geocoderService: sl(),
     ),
   );
 }

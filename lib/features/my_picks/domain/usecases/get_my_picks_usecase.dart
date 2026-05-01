@@ -1,8 +1,10 @@
-import 'package:splukk/features/bookings/data/booking_repository.dart';
+import 'package:splukk/features/bookings/domain/repositories/booking_repository.dart';
 import 'package:splukk/features/listings/domain/repositories/listing_repository.dart';
 
 import '../entities/my_pick_item.dart';
 
+/// Domain UseCase: получить список бронирований текущего пользователя.
+/// Зависит ТОЛЬКО от Domain-интерфейсов (BookingRepository, ListingRepository).
 class GetMyPicksUseCase {
   GetMyPicksUseCase({
     required this.bookingRepository,
@@ -21,7 +23,7 @@ class GetMyPicksUseCase {
 
     for (final booking in bookings) {
       final listing = await listingRepository.getListing(booking.listingId);
-      if (listing == null) continue; // Skip if listing is deleted
+      if (listing == null) continue;
 
       DateTime bookingDate;
       if (booking.specificDateMs != null) {
@@ -29,9 +31,6 @@ class GetMyPicksUseCase {
           booking.specificDateMs!,
         );
       } else {
-        // If it's a recurring weekday, we try to find the next occurrence or use createdAt as a fallback.
-        // For simplicity, let's treat recurring without specific date as upcoming if it's generally active.
-        // But usually splukk has specificDateMs. Let's just use a default or calculate next weekday.
         bookingDate = _getNextWeekday(booking.weekday);
       }
 
@@ -53,13 +52,9 @@ class GetMyPicksUseCase {
       );
     }
 
-    // Sort: Upcoming first, then past.
-    // Within upcoming: closest date first.
-    // Within past: most recent first.
     items.sort((a, b) {
       if (a.isUpcoming && !b.isUpcoming) return -1;
       if (!a.isUpcoming && b.isUpcoming) return 1;
-
       if (a.isUpcoming) {
         return a.bookingDate.compareTo(b.bookingDate);
       } else {

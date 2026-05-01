@@ -12,5 +12,8 @@ class AppRouter extends RootStackRouter {
         AutoRoute(page: FarmerDashboardRoute.page),
         AutoRoute(page: FarmerListingFormRoute.page),
         AutoRoute(page: ListingDetailRoute.page),
+        AutoRoute(page: ChatRoute.page),
+        AutoRoute(page: EditProfileRoute.page),
+        AutoRoute(page: FarmerPublicProfileRoute.page),
       ];
 }

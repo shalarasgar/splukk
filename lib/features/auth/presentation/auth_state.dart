@@ -24,6 +24,9 @@ class AuthState extends Equatable {
   const AuthState.verifyingPhone()
       : this._(status: AuthStatus.verifyingPhone);
 
+  const AuthState.updating()
+      : this._(status: AuthStatus.updating);
+
   const AuthState.codeSent({required String verificationId})
       : this._(
           status: AuthStatus.codeSent,
@@ -45,6 +48,22 @@ class AuthState extends Equatable {
   @override
   List<Object?> get props =>
       [status, user, profile, errorMessage, verificationId];
+
+  AuthState copyWith({
+    AuthStatus? status,
+    SessionUser? user,
+    UserProfile? profile,
+    String? errorMessage,
+    String? verificationId,
+  }) {
+    return AuthState._(
+      status: status ?? this.status,
+      user: user ?? this.user,
+      profile: profile ?? this.profile,
+      errorMessage: errorMessage ?? this.errorMessage,
+      verificationId: verificationId ?? this.verificationId,
+    );
+  }
 }
 
 enum AuthStatus {
@@ -52,5 +71,6 @@ enum AuthStatus {
   verifyingPhone,
   codeSent,
   authenticated,
+  updating,
   failure,
 }

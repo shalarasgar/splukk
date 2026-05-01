@@ -57,4 +57,9 @@ class UserProfileRepositoryImpl implements UserProfileRepository {
       localLogoPath: localLogoPath,
     );
   }
+
+  @override
+  Future<void> updateProfile(UserProfile profile, {String? localLogoPath}) {
+    return _remote.updateUser(profile, localLogoPath: localLogoPath);
+  }
 }

@@ -1,9 +1,10 @@
 import 'dart:developer' as developer;
+import 'dart:developer';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../data/farm_address_geocoder.dart';
+import '../domain/services/geocoder_service.dart';
 import '../domain/auth_domain.dart';
 
 part 'auth_event.dart';
@@ -14,9 +15,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required PhoneAuthRepository phoneAuthRepository,
     required UserProfileRepository userProfileRepository,
     required SocialAuthRepository socialAuthRepository,
+    required GeocoderService geocoderService,
   }) : _phoneAuthRepository = phoneAuthRepository,
        _userProfileRepository = userProfileRepository,
        _socialAuthRepository = socialAuthRepository,
+       _geocoderService = geocoderService,
        super(const AuthState.unauthenticated()) {
     on<AuthStarted>(_onStarted);
     on<AuthSignOutRequested>(_onSignOutRequested);
@@ -27,13 +30,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthVerificationCodeSent>(_onVerificationCodeSent);
     on<AuthVerificationFailed>(_onVerificationFailed);
     on<AuthVippsLoginRequested>(_onVippsLoginRequested);
-    on<AuthGoogleLoginRequested>(_onGoogleLoginRequested);
+    on<AuthProfileUpdated>(_onProfileUpdated);
     add(const AuthStarted());
   }
 
   final PhoneAuthRepository _phoneAuthRepository;
   final UserProfileRepository _userProfileRepository;
   final SocialAuthRepository _socialAuthRepository;
+  final GeocoderService _geocoderService;
 
   String? _verificationId;
   AuthFlowIntent _intent = AuthFlowIntent.login;
@@ -155,44 +159,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  Future<void> _onGoogleLoginRequested(
-    AuthGoogleLoginRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(const AuthState.verifyingPhone());
-
-    try {
-      final account = await _socialAuthRepository.signInWithGoogle();
-
-      if (account == null) {
-        emit(const AuthState.failure('Google login cancelled'));
-        emit(const AuthState.unauthenticated());
-        return;
-      }
-
-      // TODO: Verify ID token on backend
-      // TODO: Check if user exists in Firestore
-      // TODO: If new user, show role selection (consumer/farmer)
-      // TODO: If existing user, authenticate automatically
-
-      emit(
-        const AuthState.failure(
-          'Google integration requires backend implementation. '
-          'Please configure client_id and implement token verification.',
-        ),
-      );
-      emit(const AuthState.unauthenticated());
-    } catch (e) {
-      developer.log(
-        'AuthBloc Google login failed',
-        name: 'splukk.google_auth',
-        error: e,
-      );
-      emit(AuthState.failure('Google login failed: $e'));
-      emit(const AuthState.unauthenticated());
-    }
-  }
-
   Future<void> _onPhoneRequested(
     AuthPhoneRequested event,
     Emitter<AuthState> emit,
@@ -245,7 +211,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         _clearPending();
         return;
       }
-      final loc = await resolveFarmCoordinates(
+      final loc = await _geocoderService.resolveCoordinates(
         street: street,
         streetNumber: streetNo,
         postalCode: farmPostalCode,
@@ -255,6 +221,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       if (loc == null) {
         emit(const AuthState.failure('Adres bulunamadı'));
+        log('${AuthState.failure('Address bulunamadı')}');
         emit(const AuthState.unauthenticated());
         _clearPending();
         return;
@@ -441,6 +408,29 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(const AuthState.unauthenticated());
     } finally {
       _clearPending();
+    }
+  }
+
+  Future<void> _onProfileUpdated(
+    AuthProfileUpdated event,
+    Emitter<AuthState> emit,
+  ) async {
+    final s = state;
+    if (s.status != AuthStatus.authenticated || s.user == null) return;
+
+    emit(s.copyWith(status: AuthStatus.updating));
+
+    try {
+      await _userProfileRepository.updateProfile(
+        event.profile,
+        localLogoPath: event.logoLocalPath,
+      );
+
+      final updated = await _userProfileRepository.getProfile(s.user!.uid);
+      emit(AuthState.authenticated(user: s.user!, profile: updated!));
+    } catch (e) {
+      emit(AuthState.failure(e.toString()));
+      emit(s); // revert to previous authenticated state
     }
   }
 }

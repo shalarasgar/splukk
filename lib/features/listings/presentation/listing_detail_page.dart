@@ -3,7 +3,8 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get/get.dart';
+import 'package:splukk/core/router/app_router.gr.dart';
+import '../../../core/di/dependencies.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -12,7 +13,7 @@ import '../../../core/constants/products.dart';
 import '../../../core/utils/nok_money.dart';
 import '../../auth/domain/auth_domain.dart';
 import '../../auth/presentation/auth_bloc.dart';
-import '../../auth/data/datasources/user_profile_remote_datasource.dart';
+import '../../auth/domain/repositories/user_profile_repository.dart';
 import '../../bookings/data/booking_repository.dart';
 import '../../bookings/domain/entities/booking.dart';
 import '../domain/listings_domain.dart';
@@ -29,12 +30,12 @@ class ListingDetailPage extends StatefulWidget {
 }
 
 class _ListingDetailPageState extends State<ListingDetailPage> {
-  final _repo = Get.find<ListingRepository>();
-  final _bookingRepo = Get.find<BookingRepository>();
-  final _userProfileRemoteDataSource = UserProfileRemoteDataSource();
+  final _repo = sl<ListingRepository>();
+  final _bookingRepo = sl<BookingRepository>();
+  final _userProfileRepo = sl<UserProfileRepository>();
 
   FarmListing? _listing;
-  Map<String, dynamic>? _farmerProfile;
+  UserProfile? _farmerProfile;
   Booking? _myBooking; // existing booking for this user+listing
   bool _isLoading = true;
   bool _isBusy = false;
@@ -56,7 +57,7 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
     try {
       final listing = await _repo.getListing(widget.listingId);
       if (listing != null) {
-        final profile = await _userProfileRemoteDataSource.getUserDocument(
+        final profile = await _userProfileRepo.getProfile(
           listing.farmerUid,
         );
         Booking? myBooking;
@@ -233,7 +234,7 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
     final now = DateTime.now();
     final open = isListingOpenNow(listing, now);
     final headline = availabilityHeadlineForListing(listing);
-    final farmerAddress = _farmerProfile?['farmAddress'] as String?;
+    final farmerAddress = _farmerProfile?.farmAddress ?? _farmerProfile?.farmLocationSummary;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFBFBFB),
@@ -847,38 +848,62 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            FilledButton(
-                              onPressed: _isBusy || userUid == null
-                                  ? null
-                                  : () => _saveBooking(userUid),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: const Color(0xFF2B8C5F),
-                                disabledBackgroundColor: Colors.grey[300],
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                              ),
-                              child: _isBusy
-                                  ? const SizedBox(
-                                      height: 22,
-                                      width: 22,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2.5,
+                            Row(
+                              children: [
+                                IconButton(
+                                  onPressed: () {
+                                    context.router.push(
+                                      ChatRoute(
+                                        listingId: listing.id,
+                                        farmerName: listing.farmName,
+                                        farmerUid: listing.farmerUid,
                                       ),
-                                    )
-                                  : Text(
-                                      _myBooking != null
-                                          ? 'Rezervasyonu Güncelle'
-                                          : 'Rezervasyon Yap',
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.bold,
+                                    );
+                                  },
+                                  icon: const Icon(LucideIcons.messageCircle, color: Color(0xFF2B8C5F)),
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: const Color(0xFF2B8C5F).withOpacity(0.1),
+                                    padding: const EdgeInsets.all(16),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: FilledButton(
+                                    onPressed: _isBusy || userUid == null
+                                        ? null
+                                        : () => _saveBooking(userUid),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: const Color(0xFF2B8C5F),
+                                      disabledBackgroundColor: Colors.grey[300],
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
                                       ),
                                     ),
+                                    child: _isBusy
+                                        ? const SizedBox(
+                                            height: 22,
+                                            width: 22,
+                                            child: CircularProgressIndicator(
+                                              color: Colors.white,
+                                              strokeWidth: 2.5,
+                                            ),
+                                          )
+                                        : Text(
+                                            _myBooking != null
+                                                ? 'Rezervasyonu Güncelle'
+                                                : 'Rezervasyon Yap',
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 17,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
 

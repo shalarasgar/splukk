@@ -109,10 +109,15 @@ class FarmListingModel {
 
   static double? _readDouble(dynamic v) {
     if (v == null) return null;
-    if (v is double) return v;
-    if (v is int) return v.toDouble();
-    if (v is num) return v.toDouble();
-    return null;
+    double? d;
+    if (v is double) {
+      d = v;
+    } else if (v is int) {
+      d = v.toDouble();
+    } else if (v is num) {
+      d = v.toDouble();
+    }
+    return (d != null && d.isFinite) ? d : null;
   }
 
   static DateTime _readDate(dynamic value) {
