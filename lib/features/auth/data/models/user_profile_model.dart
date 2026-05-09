@@ -2,14 +2,66 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/auth_domain.dart';
 
-class UserProfileModel {
-  static UserProfile fromFirestore(String uid, Map<String, dynamic> data) {
+class UserProfileModel extends UserProfile {
+  const UserProfileModel({
+    required super.uid,
+    required super.documentId,
+    required super.role,
+    required super.phone,
+    super.fullName,
+    super.farmName,
+    super.farmAddress,
+    super.farmCountry,
+    super.farmState,
+    super.farmCity,
+    super.farmPostalCode,
+    super.farmStreet,
+    super.farmStreetNumber,
+    super.farmLatitude,
+    super.farmLongitude,
+    super.logoUrl,
+    super.bio,
+    super.alternativePhone,
+    super.socialInstagram,
+    super.socialFacebook,
+    super.bankIban,
+    required super.createdAt,
+  });
+
+  factory UserProfileModel.fromEntity(UserProfile entity) {
+    return UserProfileModel(
+      uid: entity.uid,
+      documentId: entity.documentId,
+      role: entity.role,
+      phone: entity.phone,
+      fullName: entity.fullName,
+      farmName: entity.farmName,
+      farmAddress: entity.farmAddress,
+      farmCountry: entity.farmCountry,
+      farmState: entity.farmState,
+      farmCity: entity.farmCity,
+      farmPostalCode: entity.farmPostalCode,
+      farmStreet: entity.farmStreet,
+      farmStreetNumber: entity.farmStreetNumber,
+      farmLatitude: entity.farmLatitude,
+      farmLongitude: entity.farmLongitude,
+      logoUrl: entity.logoUrl,
+      bio: entity.bio,
+      alternativePhone: entity.alternativePhone,
+      socialInstagram: entity.socialInstagram,
+      socialFacebook: entity.socialFacebook,
+      bankIban: entity.bankIban,
+      createdAt: entity.createdAt,
+    );
+  }
+
+  factory UserProfileModel.fromFirestore(String uid, Map<String, dynamic> data) {
     final roleStr = data['role'] as String? ?? UserRole.consumer.name;
     final role = UserRole.values.firstWhere(
       (e) => e.name == roleStr,
       orElse: () => UserRole.consumer,
     );
-    return UserProfile(
+    return UserProfileModel(
       uid: uid,
       documentId: data['documentId'] as String? ?? uid,
       role: role,
@@ -35,28 +87,28 @@ class UserProfileModel {
     );
   }
 
-  static Map<String, dynamic> toFirestore(UserProfile profile) {
+  Map<String, dynamic> toFirestore() {
     return {
-      'role': profile.role.name,
-      'phone': profile.phone,
-      'fullName': profile.fullName,
-      'farmName': profile.farmName,
-      'farmAddress': profile.farmAddress,
-      'farmCountry': profile.farmCountry,
-      'farmState': profile.farmState,
-      'farmCity': profile.farmCity,
-      'farmPostalCode': profile.farmPostalCode,
-      'farmStreet': profile.farmStreet,
-      'farmStreetNumber': profile.farmStreetNumber,
-      'farmLatitude': profile.farmLatitude,
-      'farmLongitude': profile.farmLongitude,
-      'logoUrl': profile.logoUrl,
-      'bio': profile.bio,
-      'alternativePhone': profile.alternativePhone,
-      'socialInstagram': profile.socialInstagram,
-      'socialFacebook': profile.socialFacebook,
-      'bankIban': profile.bankIban,
-      'createdAt': Timestamp.fromDate(profile.createdAt),
+      'role': role.name,
+      'phone': phone,
+      'fullName': fullName,
+      'farmName': farmName,
+      'farmAddress': farmAddress,
+      'farmCountry': farmCountry,
+      'farmState': farmState,
+      'farmCity': farmCity,
+      'farmPostalCode': farmPostalCode,
+      'farmStreet': farmStreet,
+      'farmStreetNumber': farmStreetNumber,
+      'farmLatitude': farmLatitude,
+      'farmLongitude': farmLongitude,
+      'logoUrl': logoUrl,
+      'bio': bio,
+      'alternativePhone': alternativePhone,
+      'socialInstagram': socialInstagram,
+      'socialFacebook': socialFacebook,
+      'bankIban': bankIban,
+      'createdAt': Timestamp.fromDate(createdAt),
     };
   }
 

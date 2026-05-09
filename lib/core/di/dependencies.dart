@@ -1,10 +1,14 @@
 import 'package:get_it/get_it.dart';
+import 'package:splukk/features/auth/presentation/phone_auth_cubit/phone_auth_cubit.dart';
 import 'package:splukk/features/listings/data/datasources/listing_remote_datasource.dart';
 import 'package:splukk/features/listings/data/repositories/listing_repository_impl.dart';
 
 import 'package:splukk/features/auth/data/auth_data.dart';
 import 'package:splukk/features/auth/domain/auth_domain.dart';
+import 'package:splukk/features/auth/domain/services/vipps_auth_service.dart';
+import 'package:splukk/features/auth/data/services/vipps_auth_service.dart';
 import 'package:splukk/features/auth/presentation/auth_bloc.dart';
+import 'package:splukk/features/auth/presentation/phone_auth_cubit/phone_auth_cubit.dart';
 import 'package:splukk/features/bookings/data/booking_remote_datasource.dart';
 import 'package:splukk/features/auth/domain/services/geocoder_service.dart';
 import 'package:splukk/features/auth/data/services/geocoder_service_impl.dart';
@@ -14,20 +18,23 @@ import 'package:splukk/features/auth/domain/usecases/get_public_profile.dart';
 import 'package:splukk/features/bookings/domain/repositories/booking_repository.dart';
 import 'package:splukk/features/bookings/data/repositories/booking_repository_impl.dart';
 import 'package:splukk/features/marketplace/presentation/marketplace_cubit.dart';
+import 'package:splukk/features/listings/presentation/bloc/listing_form_cubit.dart';
 import 'package:splukk/features/my_picks/domain/usecases/get_my_picks_usecase.dart';
 import 'package:splukk/features/my_picks/presentation/my_picks_cubit.dart';
 import 'package:splukk/features/profile/presentation/public_profile/public_profile_bloc.dart';
 import 'package:splukk/core/services/link_launcher_service.dart';
+import 'package:splukk/core/services/storage_service.dart';
+import 'package:splukk/core/services/media_picker_service.dart';
 
 final sl = GetIt.instance;
 
 void initDependencies() {
   // Data Sources
   sl.registerLazySingleton<UserProfileRemoteDataSource>(
-    () => UserProfileRemoteDataSource(),
+    () => UserProfileRemoteDataSource(storageService: sl()),
   );
   sl.registerLazySingleton<ListingRemoteDataSource>(
-    () => ListingRemoteDataSource(),
+    () => ListingRemoteDataSource(storageService: sl()),
   );
   sl.registerLazySingleton<BookingRemoteDataSource>(
     () => BookingRemoteDataSource(),
@@ -49,11 +56,13 @@ void initDependencies() {
 
   // Services
   sl.registerLazySingleton<GeocoderService>(() => GeocoderServiceImpl());
-  sl.registerLazySingleton<VippsAuthService>(() => VippsAuthService());
+  sl.registerLazySingleton<IVippsAuthService>(() => VippsAuthService());
   sl.registerLazySingleton<SocialAuthRepository>(
     () => SocialAuthRepositoryImpl(vippsAuthService: sl()),
   );
   sl.registerLazySingleton<LinkLauncherService>(() => LinkLauncherServiceImpl());
+  sl.registerLazySingleton<StorageService>(() => StorageServiceImpl());
+  sl.registerLazySingleton<MediaPickerService>(() => MediaPickerServiceImpl());
 
   // UseCases
   sl.registerLazySingleton<GetMyPicksUseCase>(
@@ -67,6 +76,10 @@ void initDependencies() {
     () => MarketplaceCubit(repo: sl(), filterUseCase: sl()),
   );
 
+  sl.registerFactory<ListingFormCubit>(
+    () => ListingFormCubit(repository: sl()),
+  );
+
   sl.registerFactory<MyPicksCubit>(
     () => MyPicksCubit(getMyPicksUseCase: sl()),
   );
@@ -78,8 +91,15 @@ void initDependencies() {
     () => AuthBloc(
       phoneAuthRepository: sl(),
       userProfileRepository: sl(),
-      socialAuthRepository: sl(),
+    ),
+  );
+
+  sl.registerFactory<PhoneAuthCubit>(
+    () => PhoneAuthCubit(
+      phoneAuthRepository: sl(),
+      userProfileRepository: sl(),
       geocoderService: sl(),
+      authBloc: sl(),
     ),
   );
 }

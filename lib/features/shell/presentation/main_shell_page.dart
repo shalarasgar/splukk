@@ -1,18 +1,18 @@
 import 'package:auto_route/auto_route.dart';
-import 'package:flutter/material.dart';
-import 'package:auto_route/auto_route.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/locale_keys.dart';
 import '../../marketplace/presentation/marketplace_page.dart';
 import '../../my_picks/presentation/my_picks_page.dart';
 import '../../profile/presentation/profile_page.dart';
 
 class ActiveTabProvider extends InheritedWidget {
   final int index;
-  
+
   const ActiveTabProvider({
-    super.key, 
-    required this.index, 
+    super.key,
+    required this.index,
     required super.child,
   });
 
@@ -58,21 +58,21 @@ class _MainShellPageState extends State<MainShellPage> {
         onDestinationSelected: (index) {
           setState(() => _currentIndex = index);
         },
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.search_outlined),
-            selectedIcon: Icon(Icons.search),
-            label: 'Search',
+            icon: const Icon(Icons.search_outlined),
+            selectedIcon: const Icon(Icons.search),
+            label: LocaleKeys.nav_search.tr(context: context),
           ),
           NavigationDestination(
-            icon: Icon(Icons.favorite_border),
-            selectedIcon: Icon(Icons.favorite),
-            label: 'My Picks',
+            icon: const Icon(Icons.favorite_border),
+            selectedIcon: const Icon(Icons.favorite),
+            label: LocaleKeys.nav_my_picks.tr(context: context),
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
+            icon: const Icon(Icons.person_outline),
+            selectedIcon: const Icon(Icons.person),
+            label: LocaleKeys.nav_profile.tr(context: context),
           ),
         ],
       ),

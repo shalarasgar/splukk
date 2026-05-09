@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../domain/entities/booking.dart';
+import 'models/booking_model.dart';
 
 class BookingRemoteDataSource {
   BookingRemoteDataSource({FirebaseFirestore? firestore})
@@ -24,7 +25,7 @@ class BookingRemoteDataSource {
         .get();
     if (snap.docs.isEmpty) return null;
     final doc = snap.docs.first;
-    return _fromDoc(doc.id, doc.data());
+    return BookingModel.fromFirestore(doc.id, doc.data());
   }
 
   /// Получить все активные бронирования пользователя
@@ -36,7 +37,7 @@ class BookingRemoteDataSource {
 
     if (snap.docs.isEmpty) return [];
 
-    return snap.docs.map((doc) => _fromDoc(doc.id, doc.data())).toList();
+    return snap.docs.map((doc) => BookingModel.fromFirestore(doc.id, doc.data())).toList();
   }
 
   /// Создать новую бронь и увеличить bookedCount в объявлении
@@ -189,20 +190,5 @@ class BookingRemoteDataSource {
     return -1;
   }
 
-  Booking _fromDoc(String id, Map<String, dynamic> data) {
-    final ts = data['createdAt'];
-    final createdAt =
-        ts is Timestamp ? ts.toDate() : DateTime.fromMillisecondsSinceEpoch(0);
-    return Booking(
-      id: id,
-      userUid: data['userUid'] as String,
-      listingId: data['listingId'] as String,
-      weekday: data['weekday'] as int,
-      startMinutes: data['startMinutes'] as int,
-      endMinutes: data['endMinutes'] as int,
-      guestCount: data['guestCount'] as int,
-      createdAt: createdAt,
-      specificDateMs: data['specificDateMs'] as int?,
-    );
-  }
+
 }

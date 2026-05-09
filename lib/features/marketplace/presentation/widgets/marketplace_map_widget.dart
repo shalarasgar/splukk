@@ -34,7 +34,7 @@ class _MarketplaceMapWidgetState extends State<MarketplaceMapWidget>
   void _animatedMapMove(LatLng destLocation, double destZoom) {
     _animationController?.dispose();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
 
@@ -91,7 +91,7 @@ class _MarketplaceMapWidgetState extends State<MarketplaceMapWidget>
           listings.first.latitude.isFinite ? listings.first.latitude : 0,
           listings.first.longitude.isFinite ? listings.first.longitude : 0,
         ),
-        12.0,
+        18.0,
       );
       return;
     }
@@ -123,7 +123,7 @@ class _MarketplaceMapWidgetState extends State<MarketplaceMapWidget>
     final maxDiff = latDiff > lngDiff ? latDiff : lngDiff;
 
     // Приблизительный расчет zoom (180 градусов = zoom 0)
-    final zoom = 10.0 - (maxDiff * 3).clamp(0.0, 8.0);
+    final zoom = 12.0 - (maxDiff * 3).clamp(0.0, 8.0);
 
     _animatedMapMove(center, zoom);
   }
@@ -215,7 +215,7 @@ class _MarketplaceMapWidgetState extends State<MarketplaceMapWidget>
               mapController: _mapController,
               options: MapOptions(
                 initialCenter: initialCenter,
-                initialZoom: 10.0,
+                initialZoom: 35.0,
                 onTap: (_, __) {
                   context.read<MarketplaceCubit>().clearSelection();
                 },
@@ -294,6 +294,8 @@ class _MarketplaceMapWidgetState extends State<MarketplaceMapWidget>
                             }
                           },
                           child: AnimatedContainer(
+                            width: 10,
+                            height: 10,
                             duration: const Duration(milliseconds: 200),
                             decoration: BoxDecoration(
                               color: isSelected
@@ -317,7 +319,7 @@ class _MarketplaceMapWidgetState extends State<MarketplaceMapWidget>
                               color: isSelected
                                   ? Colors.white
                                   : const Color(0xFF2B8C5F),
-                              size: 24,
+                              size: 34,
                             ),
                           ),
                         ),

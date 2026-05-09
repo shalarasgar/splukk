@@ -1,6 +1,8 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/l10n/locale_keys.dart';
 import '../../../../core/di/dependencies.dart';
 import '../../../../core/services/link_launcher_service.dart';
 import '../../../auth/domain/auth_domain.dart';
@@ -27,8 +29,8 @@ class FarmerPublicProfilePage extends StatelessWidget {
             onPressed: () => context.router.back(),
           ),
           centerTitle: true,
-          title: const Text(
-            'Çiftçi Profili',
+          title: Text(
+            LocaleKeys.farmer_profile_title.tr(context: context),
             style: TextStyle(
               color: Color(0xFF1E293B),
               fontWeight: FontWeight.w800,
@@ -42,7 +44,7 @@ class FarmerPublicProfilePage extends StatelessWidget {
               return const Center(child: CircularProgressIndicator(color: Color(0xFF4CAF50)));
             }
             if (state.status == PublicProfileStatus.failure) {
-              return Center(child: Text(state.errorMessage ?? 'Hata oluştu'));
+              return Center(child: Text(state.errorMessage ?? LocaleKeys.farmer_profile_error.tr(context: context)));
             }
             if (state.status == PublicProfileStatus.success && state.profile != null) {
               return _buildProfileContent(context, state.profile!);
@@ -57,7 +59,6 @@ class FarmerPublicProfilePage extends StatelessWidget {
   Widget _buildProfileContent(BuildContext context, UserProfile profile) {
     final launcher = sl<LinkLauncherService>();
     const kGreen = Color(0xFF4CAF50);
-    const kGreenDark = Color(0xFF388E3C);
     const kTextPrim = Color(0xFF1E293B);
     const kTextSec = Color(0xFF64748B);
     const kCard = Colors.white;
@@ -145,7 +146,7 @@ class FarmerPublicProfilePage extends StatelessWidget {
           const SizedBox(height: 24),
 
           // Farm Details
-          _buildSectionTitle('Çiftlik Bilgileri'),
+          _buildSectionTitle(LocaleKeys.farmer_profile_info.tr(context: context)),
           SettingsSection(
             tiles: [
               if (profile.farmLocationSummary != null)
@@ -180,7 +181,7 @@ class FarmerPublicProfilePage extends StatelessWidget {
 
           // Social & Links
           if (profile.socialInstagram != null || profile.socialFacebook != null) ...[
-            _buildSectionTitle('Sosyal Medya'),
+            _buildSectionTitle(LocaleKeys.farmer_profile_social.tr(context: context)),
             SettingsSection(
               tiles: [
                 if (profile.socialInstagram != null && profile.socialInstagram!.isNotEmpty)
@@ -207,7 +208,7 @@ class FarmerPublicProfilePage extends StatelessWidget {
           // Footer info
           Center(
             child: Text(
-              'Splukk Üyesi',
+              LocaleKeys.farmer_profile_member.tr(context: context),
               style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
             ),
           ),
@@ -253,7 +254,7 @@ class FarmerPublicProfilePage extends StatelessWidget {
             const Divider(height: 1),
             ListTile(
               leading: const Icon(Icons.phone_rounded, color: Colors.green),
-              title: const Text('Arama Yap'),
+              title: Text(LocaleKeys.farmer_profile_call.tr(context: context)),
               onTap: () {
                 Navigator.pop(context);
                 launcher.makeCall(phone);
@@ -261,7 +262,7 @@ class FarmerPublicProfilePage extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.message_rounded, color: Colors.blue),
-              title: const Text('SMS Gönder'),
+              title: Text(LocaleKeys.farmer_profile_send_sms.tr(context: context)),
               onTap: () {
                 Navigator.pop(context);
                 launcher.sendSms(phone);

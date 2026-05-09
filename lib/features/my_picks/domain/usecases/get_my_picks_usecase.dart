@@ -1,3 +1,4 @@
+import 'package:splukk/features/bookings/domain/entities/booking.dart';
 import 'package:splukk/features/bookings/domain/repositories/booking_repository.dart';
 import 'package:splukk/features/listings/domain/repositories/listing_repository.dart';
 
@@ -15,14 +16,16 @@ class GetMyPicksUseCase {
   final ListingRepository listingRepository;
 
   Future<List<MyPickItem>> call(String userUid) async {
-    final bookings = await bookingRepository.getUserBookings(userUid: userUid);
+    final bookingsResult = await bookingRepository.getUserBookings(userUid: userUid);
+    final bookings = bookingsResult.fold((l) => <Booking>[], (r) => r);
 
     final List<MyPickItem> items = [];
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
     for (final booking in bookings) {
-      final listing = await listingRepository.getListing(booking.listingId);
+      final listingResult = await listingRepository.getListing(booking.listingId);
+      final listing = listingResult.fold((l) => null, (r) => r);
       if (listing == null) continue;
 
       DateTime bookingDate;

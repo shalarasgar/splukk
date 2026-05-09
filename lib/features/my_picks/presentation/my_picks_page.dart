@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/services/link_launcher_service.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:splukk/core/l10n/locale_keys.dart';
 
 import 'package:flutter/services.dart';
 import 'package:splukk/core/constants/products.dart';
@@ -77,7 +79,7 @@ class _MyPicksView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeader(),
+                  _buildHeader(context),
                   Expanded(
                     child: BlocBuilder<MyPicksCubit, MyPicksState>(
                       builder: (context, state) {
@@ -94,7 +96,7 @@ class _MyPicksView extends StatelessWidget {
                         }
 
                         if (state.items.isEmpty) {
-                          return _buildEmptyState();
+                          return _buildEmptyState(context);
                         }
 
                         return RefreshIndicator(
@@ -126,14 +128,14 @@ class _MyPicksView extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Seçtiklerim',
+            LocaleKeys.nav_my_picks.tr(context: context),
             style: GoogleFonts.outfit(
               fontSize: 32,
               fontWeight: FontWeight.bold,
@@ -142,33 +144,45 @@ class _MyPicksView extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Planlanan ziyaretleriniz',
-            style: GoogleFonts.inter(fontSize: 15, color: Colors.grey[600]),
+            LocaleKeys.my_picks_planned_visits.tr(context: context),
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(LucideIcons.calendarX, size: 64, color: Colors.grey[300]),
-          const SizedBox(height: 16),
+          _EmptyIllustration(),
+          const SizedBox(height: 24),
           Text(
-            'Henüz rezervasyonunuz yok',
+            LocaleKeys.my_picks_empty.tr(context: context),
             style: GoogleFonts.outfit(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1A1A1A),
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            'Yeni yerler keşfetmeye başlayın!',
-            style: GoogleFonts.inter(color: Colors.grey[400]),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              LocaleKeys.my_picks_empty_subtitle.tr(context: context),
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                color: Colors.grey[600],
+                height: 1.5,
+              ),
+            ),
           ),
         ],
       ),
@@ -182,14 +196,20 @@ class _MyPicksView extends StatelessWidget {
         children: [
           const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
           const SizedBox(height: 16),
-          Text(error),
+          Text(
+            error == 'AUTH_REQUIRED'
+                ? LocaleKeys.auth_login_required.tr(context: context)
+                : LocaleKeys.common_error_generic.tr(context: context),
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(color: Colors.grey[800]),
+          ),
           TextButton(
             onPressed: () => context.read<MyPicksCubit>().loadMyPicks(
               context.read<AuthBloc>().state.profile?.uid,
             ),
-            child: const Text(
-              'Tekrar Dene',
-              style: TextStyle(color: Color(0xFF2B8C5F)),
+            child: Text(
+              LocaleKeys.my_picks_retry.tr(context: context),
+              style: const TextStyle(color: Color(0xFF2B8C5F)),
             ),
           ),
         ],
@@ -203,9 +223,10 @@ class MyPickTicketCard extends StatelessWidget {
 
   final MyPickItem item;
 
-  String _formatDate() {
+  String _formatDate(BuildContext context) {
     final date = item.bookingDate;
-    return '${date.day} ${monthNameTr(date.month)} ${weekdayNameTr(date.weekday)}';
+    final locale = context.locale.languageCode;
+    return '${date.day} ${monthName(date.month, locale)} ${weekdayName(date.weekday, locale)}';
   }
 
   String _formatTime() {
@@ -213,10 +234,8 @@ class MyPickTicketCard extends StatelessWidget {
   }
 
   Future<void> _openMaps(BuildContext context) async {
-    final uri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=${item.listing.latitude},${item.listing.longitude}',
-    );
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final url = 'https://www.google.com/maps/search/?api=1&query=${item.listing.latitude},${item.listing.longitude}';
+    await sl<LinkLauncherService>().openExternalUrl(url);
   }
 
   @override
@@ -331,14 +350,14 @@ class MyPickTicketCard extends StatelessWidget {
                         children: [
                           _DetailColumn(
                             icon: LucideIcons.calendar,
-                            label: 'Tarih',
-                            value: _formatDate(),
+                            label: LocaleKeys.my_picks_date.tr(context: context),
+                            value: _formatDate(context),
                           ),
                           const Spacer(),
                           _DetailColumn(
                             icon: LucideIcons.users,
-                            label: 'Kişi',
-                            value: '${item.booking.guestCount} Kişi',
+                            label: LocaleKeys.my_picks_guests_count.tr(context: context),
+                            value: LocaleKeys.listings_guests.plural(item.booking.guestCount, context: context),
                           ),
                         ],
                       ),
@@ -347,7 +366,7 @@ class MyPickTicketCard extends StatelessWidget {
                         children: [
                           _DetailColumn(
                             icon: LucideIcons.clock,
-                            label: 'Saat',
+                            label: LocaleKeys.my_picks_time.tr(context: context),
                             value: _formatTime(),
                           ),
                         ],
@@ -359,7 +378,7 @@ class MyPickTicketCard extends StatelessWidget {
                             child: OutlinedButton.icon(
                               onPressed: () => _openMaps(context),
                               icon: const Icon(LucideIcons.map, size: 18),
-                              label: const Text('Harita'),
+                              label: Text(LocaleKeys.listings_map.tr(context: context)),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: accentColor,
                                 side: BorderSide(
@@ -395,7 +414,7 @@ class MyPickTicketCard extends StatelessWidget {
                                   vertical: 12,
                                 ),
                               ),
-                              child: const Text('Detaylar'),
+                              child: Text(LocaleKeys.listings_details.tr(context: context)),
                             ),
                           ),
                         ],
@@ -454,7 +473,7 @@ class _StatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        upcoming ? 'Yaklaşan' : 'Geçmiş',
+        upcoming ? LocaleKeys.my_picks_upcoming.tr(context: context) : LocaleKeys.my_picks_past.tr(context: context),
         style: GoogleFonts.inter(
           fontSize: 11,
           fontWeight: FontWeight.bold,
@@ -568,6 +587,52 @@ class _Hole extends StatelessWidget {
           topLeft: !isLeft ? const Radius.circular(10) : Radius.zero,
           bottomLeft: !isLeft ? const Radius.circular(10) : Radius.zero,
         ),
+      ),
+    );
+  }
+}
+
+class _EmptyIllustration extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 140,
+      height: 140,
+      decoration: BoxDecoration(
+        color: const Color(0xFF2B8C5F).withOpacity(0.05),
+        shape: BoxShape.circle,
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Icon(
+            LucideIcons.heart,
+            size: 64,
+            color: const Color(0xFF2B8C5F).withOpacity(0.2),
+          ),
+          Transform.translate(
+            offset: const Offset(20, -20),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                LucideIcons.search,
+                size: 24,
+                color: Color(0xFF2B8C5F),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

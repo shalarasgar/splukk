@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../auth/domain/auth_domain.dart';
 import '../../../auth/domain/usecases/get_public_profile.dart';
+import '../../../../core/l10n/locale_keys.dart';
 
 // Events
 abstract class PublicProfileEvent extends Equatable {
@@ -62,15 +63,23 @@ class PublicProfileBloc extends Bloc<PublicProfileEvent, PublicProfileState> {
     Emitter<PublicProfileState> emit,
   ) async {
     emit(state.copyWith(status: PublicProfileStatus.loading));
-    try {
-      final profile = await _getPublicProfile.execute(event.uid);
-      if (profile != null) {
-        emit(state.copyWith(status: PublicProfileStatus.success, profile: profile));
-      } else {
-        emit(state.copyWith(status: PublicProfileStatus.failure, errorMessage: 'Profil bulunamadı'));
-      }
-    } catch (e) {
-      emit(state.copyWith(status: PublicProfileStatus.failure, errorMessage: e.toString()));
-    }
+    final result = await _getPublicProfile.execute(event.uid);
+    result.fold(
+      (failure) {
+        emit(state.copyWith(
+            status: PublicProfileStatus.failure,
+            errorMessage: failure.message ?? 'Unknown error'));
+      },
+      (profile) {
+        if (profile != null) {
+          emit(state.copyWith(
+              status: PublicProfileStatus.success, profile: profile));
+        } else {
+          emit(state.copyWith(
+              status: PublicProfileStatus.failure,
+              errorMessage: LocaleKeys.farmer_profile_not_found));
+        }
+      },
+    );
   }
 }

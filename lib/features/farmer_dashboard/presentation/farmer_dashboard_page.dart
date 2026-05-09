@@ -2,6 +2,8 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/di/dependencies.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:splukk/core/l10n/locale_keys.dart';
 
 import '../../../core/app_messages.dart';
 import '../../../core/router/app_router.gr.dart';
@@ -19,10 +21,10 @@ class FarmerDashboardPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Çiftçi paneli'),
+        title: Text(LocaleKeys.farmer_dashboard_title.tr(context: context)),
         actions: [
           IconButton(
-            tooltip: 'Yeni ilan',
+            tooltip: LocaleKeys.farmer_listing_form_new_title.tr(context: context),
             onPressed: uid == null
                 ? null
                 : () {
@@ -39,17 +41,17 @@ class FarmerDashboardPage extends StatelessWidget {
               );
               if (context.mounted) context.router.maybePop();
             },
-            child: const Text('Çıkış'),
+            child: Text(LocaleKeys.farmer_dashboard_sign_out.tr(context: context)),
           ),
         ],
       ),
       body: uid == null
-          ? const Center(child: Text('Oturum gerekli'))
+          ? Center(child: Text(LocaleKeys.farmer_dashboard_auth_required.tr(context: context)))
           : StreamBuilder<List<FarmListing>>(
               stream: repo.watchListingsForFarmer(uid),
               builder: (context, snap) {
                 if (snap.hasError) {
-                  return Center(child: Text('Hata: ${snap.error}'));
+                  return Center(child: Text('${LocaleKeys.farmer_profile_error.tr(context: context)}: ${snap.error}'));
                 }
                 if (!snap.hasData) {
                   return const Center(child: CircularProgressIndicator());
@@ -60,14 +62,14 @@ class FarmerDashboardPage extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('Henüz ilanınız yok'),
+                        Text(LocaleKeys.farmer_dashboard_no_listings.tr(context: context)),
                         const SizedBox(height: 16),
                         FilledButton.icon(
                           onPressed: () {
                             context.router.push(FarmerListingFormRoute());
                           },
                           icon: const Icon(Icons.add),
-                          label: const Text('İlan oluştur'),
+                          label: Text(LocaleKeys.farmer_dashboard_create_listing.tr(context: context)),
                         ),
                       ],
                     ),
@@ -98,33 +100,36 @@ class FarmerDashboardPage extends StatelessWidget {
                               final ok = await showDialog<bool>(
                                 context: context,
                                 builder: (ctx) => AlertDialog(
-                                  title: const Text('İlanı Sil'),
-                                  content: const Text('Bu ilanı silmek istediğinize emin misiniz?'),
+                                  title: Text(LocaleKeys.farmer_dashboard_delete_confirm_title.tr(context: context)),
+                                  content: Text(LocaleKeys.farmer_dashboard_delete_confirm_body.tr(context: context)),
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.of(ctx).pop(false),
-                                      child: const Text('İptal'),
+                                      child: Text(LocaleKeys.common_cancel.tr(context: context)),
                                     ),
                                     FilledButton(
                                       style: FilledButton.styleFrom(backgroundColor: Colors.red),
                                       onPressed: () => Navigator.of(ctx).pop(true),
-                                      child: const Text('Sil'),
+                                      child: Text(LocaleKeys.farmer_listing_form_delete.tr(context: context)),
                                     ),
                                   ],
                                 ),
                               );
-                              if (ok == true) {
-                                try {
-                                  await repo.deleteListing(l.id);
-                                  if (context.mounted) {
-                                    showAppSnackBar(context, 'İlan başarıyla silindi');
-                                  }
-                                } catch (e) {
-                                  if (context.mounted) {
-                                    showAppSnackBar(context, 'Hata: $e', isError: true);
-                                  }
+                                if (ok == true) {
+                                  final result = await repo.deleteListing(l.id);
+                                  result.fold(
+                                    (failure) {
+                                      if (context.mounted) {
+                                        showAppSnackBar(context, '${LocaleKeys.farmer_profile_error.tr(context: context)}: ${failure.message}', isError: true);
+                                      }
+                                    },
+                                    (_) {
+                                      if (context.mounted) {
+                                        showAppSnackBar(context, LocaleKeys.farmer_dashboard_delete_success.tr(context: context));
+                                      }
+                                    },
+                                  );
                                 }
-                              }
                             },
                           ),
                           const Icon(Icons.chevron_right),
@@ -147,7 +152,7 @@ class FarmerDashboardPage extends StatelessWidget {
                 context.router.push(FarmerListingFormRoute());
               },
               icon: const Icon(Icons.add),
-              label: const Text('İlan'),
+              label: Text(LocaleKeys.farmer_dashboard_create_listing.tr(context: context)),
             ),
     );
   }

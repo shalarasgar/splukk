@@ -7,14 +7,14 @@ import 'package:splukk/core/router/app_router.gr.dart';
 import '../../../core/di/dependencies.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/services/link_launcher_service.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:splukk/core/l10n/locale_keys.dart';
 
-import '../../../core/constants/products.dart';
 import '../../../core/utils/nok_money.dart';
 import '../../auth/domain/auth_domain.dart';
 import '../../auth/presentation/auth_bloc.dart';
-import '../../auth/domain/repositories/user_profile_repository.dart';
-import '../../bookings/data/booking_repository.dart';
+import '../../bookings/domain/repositories/booking_repository.dart';
 import '../../bookings/domain/entities/booking.dart';
 import '../domain/listings_domain.dart';
 import 'listing_ui_helpers.dart';
@@ -55,22 +55,24 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
   Future<void> _loadData({String? userUid}) async {
     setState(() => _isLoading = true);
     try {
-      final listing = await _repo.getListing(widget.listingId);
+      final listingResult = await _repo.getListing(widget.listingId);
+      final listing = listingResult.fold((l) => null, (r) => r);
       if (listing != null) {
-        final profile = await _userProfileRepo.getProfile(
+        final profileResult = await _userProfileRepo.getProfile(
           listing.farmerUid,
         );
         Booking? myBooking;
         if (userUid != null) {
-          myBooking = await _bookingRepo.getUserBookingForListing(
+          final bookingResult = await _bookingRepo.getUserBookingForListing(
             userUid: userUid,
             listingId: widget.listingId,
           );
+          myBooking = bookingResult.fold((l) => null, (r) => r);
         }
         if (mounted) {
           setState(() {
             _listing = listing;
-            _farmerProfile = profile;
+            _farmerProfile = profileResult.fold((l) => null, (r) => r);
             _myBooking = myBooking;
             if (myBooking != null) _guestCount = myBooking.guestCount;
           });
@@ -105,81 +107,82 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
   Future<void> _saveBooking(String userUid) async {
     if (_selectedSlot == null || _listing == null) return;
     setState(() => _isBusy = true);
-    try {
-      final slot = _selectedSlot!;
-      if (_myBooking != null) {
-        // UPDATE existing booking
-        await _bookingRepo.updateBooking(
-          existing: _myBooking!,
-          newGuestCount: _guestCount,
-        );
-        _showSnack('Rezervasyon güncellendi!');
-      } else {
-        // CREATE new booking
-        await _bookingRepo.createBooking(
-          userUid: userUid,
-          listingId: _listing!.id,
-          weekday: slot.weekday,
-          startMinutes: slot.startMinutes,
-          endMinutes: slot.endMinutes,
-          guestCount: _guestCount,
-          specificDateMs: slot.specificDate?.millisecondsSinceEpoch,
-        );
-        _showSnack('Rezervasyon başarıyla oluşturuldu!');
-      }
-      await _loadData(userUid: userUid);
-      setState(() {
-        _selectedSlot = null;
-        _guestCount = 1;
-      });
-    } catch (e) {
-      _showSnack('Hata: $e', error: true);
-    } finally {
-      if (mounted) setState(() => _isBusy = false);
+    final slot = _selectedSlot!;
+    if (_myBooking != null) {
+      // UPDATE existing booking
+      final result = await _bookingRepo.updateBooking(
+        existing: _myBooking!,
+        newGuestCount: _guestCount,
+      );
+      result.fold(
+        (failure) => _showSnack(
+            '${LocaleKeys.farmer_profile_error.tr(context: context)}: ${failure.message}',
+            error: true),
+        (_) => _showSnack(LocaleKeys.listings_booking_updated.tr(context: context)),
+      );
+    } else {
+      // CREATE new booking
+      final result = await _bookingRepo.createBooking(
+        userUid: userUid,
+        listingId: _listing!.id,
+        weekday: slot.weekday,
+        startMinutes: slot.startMinutes,
+        endMinutes: slot.endMinutes,
+        guestCount: _guestCount,
+        specificDateMs: slot.specificDate?.millisecondsSinceEpoch,
+      );
+      result.fold(
+        (failure) => _showSnack(
+            '${LocaleKeys.farmer_profile_error.tr(context: context)}: ${failure.message}',
+            error: true),
+        (_) => _showSnack(LocaleKeys.listings_booking_success.tr(context: context)),
+      );
     }
+    await _loadData(userUid: userUid);
+    setState(() {
+      _selectedSlot = null;
+      _guestCount = 1;
+      _isBusy = false;
+    });
   }
 
   Future<void> _cancelBooking(String userUid) async {
     if (_myBooking == null) return;
     setState(() => _isBusy = true);
-    try {
-      await _bookingRepo.cancelBooking(booking: _myBooking!);
-      _showSnack('Rezervasyon iptal edildi.');
-      await _loadData(userUid: userUid);
+    final result = await _bookingRepo.cancelBooking(booking: _myBooking!);
+    await result.fold(
+      (failure) async {
+        _showSnack(
+            '${LocaleKeys.farmer_profile_error.tr(context: context)}: ${failure.message}',
+            error: true);
+      },
+      (_) async {
+        _showSnack(LocaleKeys.listings_booking_cancelled.tr(context: context));
+        await _loadData(userUid: userUid);
+      },
+    );
+    if (mounted) {
       setState(() {
         _selectedSlot = null;
         _guestCount = 1;
+        _isBusy = false;
       });
-    } catch (e) {
-      _showSnack('Hata: $e', error: true);
-    } finally {
-      if (mounted) setState(() => _isBusy = false);
     }
   }
 
   Future<void> _openMaps(double lat, double lng) async {
-    final uri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
-    );
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final url = 'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
+    await sl<LinkLauncherService>().openExternalUrl(url);
   }
 
   String _unitLabel(ListingPriceUnit u) {
-    switch (u) {
-      case ListingPriceUnit.kg:
-        return 'kg';
-      case ListingPriceUnit.package:
-        return 'paket';
-    }
+    if (u == ListingPriceUnit.kg) return LocaleKeys.farmer_listing_form_unit_kg.tr(context: context);
+    return LocaleKeys.farmer_listing_form_unit_package.tr(context: context);
   }
 
   String _pickingLabel(PickingType t) {
-    switch (t) {
-      case PickingType.selfPicking:
-        return 'Kendi toplama';
-      case PickingType.prePicked:
-        return 'Toplanmış satış';
-    }
+    if (t == PickingType.selfPicking) return LocaleKeys.listings_picking_self.tr(context: context);
+    return LocaleKeys.listings_picking_prepicked.tr(context: context);
   }
 
   Widget _buildGlassCard({required Widget child, EdgeInsetsGeometry? padding}) {
@@ -223,9 +226,9 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
 
     if (_listing == null) {
       return Scaffold(
-        appBar: AppBar(title: Text('İlan Detayı', style: GoogleFonts.outfit())),
+        appBar: AppBar(title: Text(LocaleKeys.listings_details.tr(context: context), style: GoogleFonts.outfit())),
         body: Center(
-          child: Text('İlan bulunamadı', style: GoogleFonts.inter()),
+          child: Text(LocaleKeys.farmer_dashboard_no_listings.tr(context: context), style: GoogleFonts.inter()),
         ),
       );
     }
@@ -233,7 +236,7 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
     final listing = _listing!;
     final now = DateTime.now();
     final open = isListingOpenNow(listing, now);
-    final headline = availabilityHeadlineForListing(listing);
+    final headline = availabilityHeadlineForListing(listing, context);
     final farmerAddress = _farmerProfile?.farmAddress ?? _farmerProfile?.farmLocationSummary;
 
     return Scaffold(
@@ -350,7 +353,7 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              open ? 'ŞU AN AÇIK' : 'KAPALI',
+                              open ? LocaleKeys.listings_open.tr(context: context) : LocaleKeys.listings_closed.tr(context: context),
                               style: GoogleFonts.inter(
                                 fontWeight: FontWeight.bold,
                                 color: open
@@ -389,7 +392,7 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Durum',
+                                    LocaleKeys.listings_status.tr(context: context),
                                     style: GoogleFonts.inter(
                                       fontSize: 13,
                                       color: Colors.grey[500],
@@ -438,7 +441,7 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Toplama Tipi',
+                                    LocaleKeys.listings_picking_type.tr(context: context),
                                     style: GoogleFonts.inter(
                                       fontSize: 13,
                                       color: Colors.grey[500],
@@ -462,7 +465,7 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
 
                   const SizedBox(height: 32),
                   Text(
-                    'Ürünler',
+                    LocaleKeys.listings_products.tr(context: context),
                     style: GoogleFonts.outfit(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -470,8 +473,7 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
                   ),
                   const SizedBox(height: 16),
                   ...listing.products.map((p) {
-                    final name =
-                        products[p.categoryId]?[p.productId] ?? p.productId;
+                    final name = 'products.${p.productId}'.tr(context: context);
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: _buildGlassCard(
@@ -516,7 +518,7 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
                       listing.description!.trim().isNotEmpty) ...[
                     const SizedBox(height: 32),
                     Text(
-                      'Açıklama',
+                      LocaleKeys.farmer_listing_form_description.tr(context: context),
                       style: GoogleFonts.outfit(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -537,7 +539,7 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
 
                   const SizedBox(height: 32),
                   Text(
-                    'Konum',
+                    LocaleKeys.location_city.tr(context: context), // Or some key for "Location"
                     style: GoogleFonts.outfit(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -583,7 +585,7 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
                                 _openMaps(listing.latitude, listing.longitude),
                             icon: const Icon(LucideIcons.navigation, size: 18),
                             label: Text(
-                              'Haritada Aç',
+                              LocaleKeys.listings_directions.tr(context: context),
                               style: GoogleFonts.inter(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
@@ -604,7 +606,7 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
 
                   const SizedBox(height: 32),
                   Text(
-                    'Çalışma Programı & Rezervasyon',
+                    LocaleKeys.listings_schedule_booking.tr(context: context),
                     style: GoogleFonts.outfit(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -632,7 +634,7 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
                                 _myBooking!.endMinutes == s.endMinutes;
                             final dateStr = s.specificDate != null
                                 ? '${s.specificDate!.day}.${s.specificDate!.month}.${s.specificDate!.year}'
-                                : weekdayNameTr(s.weekday);
+                                : weekdayName(s.weekday, context.locale.languageCode);
 
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 12),
@@ -725,8 +727,8 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
                                             const SizedBox(height: 4),
                                             Text(
                                               isFull
-                                                  ? 'Dolu'
-                                                  : 'Boş: ${s.maxPeople - s.bookedCount} kişi',
+                                                  ? LocaleKeys.listings_full.tr(context: context)
+                                                  : '${LocaleKeys.listings_free.tr(context: context)}: ${s.maxPeople - s.bookedCount} ${LocaleKeys.listings_guests.plural(s.maxPeople - s.bookedCount, context: context)}',
                                               style: GoogleFonts.inter(
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.w600,
@@ -776,7 +778,7 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Kaç kişi?',
+                                    LocaleKeys.listings_how_many_guests.tr(context: context),
                                     style: GoogleFonts.outfit(
                                       fontSize: 17,
                                       fontWeight: FontWeight.bold,
@@ -817,7 +819,7 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
                                                 (i) {
                                                   return Center(
                                                     child: Text(
-                                                      '${i + 1} kişi',
+                                                      LocaleKeys.listings_guests.plural(i + 1, context: context),
                                                       style: GoogleFonts.inter(
                                                         fontSize: 20,
                                                       ),
@@ -833,7 +835,7 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
                                                 top: 4,
                                               ),
                                               child: Text(
-                                                'Maksimum $freeSpots kişi seçilebilir',
+                                                LocaleKeys.listings_max_guests.plural(freeSpots, namedArgs: {'count': freeSpots.toString()}, context: context),
                                                 style: GoogleFonts.inter(
                                                   fontSize: 12,
                                                   color: Colors.orange[700],
@@ -894,8 +896,8 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
                                           )
                                         : Text(
                                             _myBooking != null
-                                                ? 'Rezervasyonu Güncelle'
-                                                : 'Rezervasyon Yap',
+                                                ? LocaleKeys.bookings_update.tr(context: context)
+                                                : LocaleKeys.listings_book_now.tr(context: context),
                                             style: GoogleFonts.outfit(
                                               fontSize: 17,
                                               fontWeight: FontWeight.bold,
@@ -951,7 +953,7 @@ class _ListingDetailPageState extends State<ListingDetailPage> {
                                 color: Colors.red,
                               ),
                               label: Text(
-                                'Rezervasyonu İptal Et',
+                                LocaleKeys.bookings_cancel.tr(context: context),
                                 style: GoogleFonts.inter(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.red,

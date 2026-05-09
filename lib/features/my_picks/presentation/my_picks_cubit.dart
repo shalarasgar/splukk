@@ -1,5 +1,4 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:splukk/features/auth/presentation/auth_bloc.dart';
 import '../domain/usecases/get_my_picks_usecase.dart';
 import 'my_picks_state.dart';
 
@@ -14,7 +13,7 @@ class MyPicksCubit extends Cubit<MyPicksState> {
     if (userUid == null) {
       emit(state.copyWith(
         isLoading: false,
-        errorMessage: 'Lütfen giriş yapın.',
+        errorMessage: 'AUTH_REQUIRED',
       ));
       return;
     }
@@ -30,7 +29,7 @@ class MyPicksCubit extends Cubit<MyPicksState> {
     } catch (e) {
       emit(state.copyWith(
         isLoading: false,
-        errorMessage: 'Hata oluştu: $e',
+        errorMessage: e.toString(),
       ));
     }
   }

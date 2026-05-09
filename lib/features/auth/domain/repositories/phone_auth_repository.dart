@@ -1,11 +1,13 @@
+import 'package:dartz/dartz.dart';
+import '../../../../core/error/failures.dart';
 import '../entities/session_user.dart';
 
 abstract class PhoneAuthRepository {
   SessionUser? get currentUser;
 
-  Future<void> signOut();
+  Future<Either<Failure, void>> signOut();
 
-  Future<void> startVerifyPhoneNumber(
+  Future<Either<Failure, void>> startVerifyPhoneNumber(
     String phoneNumber, {
     required Future<void> Function(SessionUser user) verificationCompleted,
     required void Function(String message) verificationFailed,
@@ -13,7 +15,7 @@ abstract class PhoneAuthRepository {
     required void Function(String verificationId) codeAutoRetrievalTimeout,
   });
 
-  Future<SessionUser> signInWithSmsCode({
+  Future<Either<Failure, SessionUser>> signInWithSmsCode({
     required String verificationId,
     required String smsCode,
   });

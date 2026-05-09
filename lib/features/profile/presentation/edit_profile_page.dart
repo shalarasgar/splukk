@@ -1,13 +1,17 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:splukk/core/di/dependencies.dart';
+import 'package:splukk/core/services/media_picker_service.dart';
 import 'dart:io';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:splukk/core/l10n/locale_keys.dart';
+import 'package:splukk/core/widgets/premium_button.dart';
+import 'package:splukk/core/widgets/premium_text_field.dart';
 
 import '../../auth/domain/auth_domain.dart';
 import '../../auth/presentation/auth_bloc.dart';
-import 'widgets/premium_button.dart';
-import 'widgets/premium_text_field.dart';
+import '../../../core/utils/auth_error_resolver.dart';
 
 @RoutePage()
 class EditProfilePage extends StatefulWidget {
@@ -55,10 +59,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      setState(() => _localLogoPath = image.path);
+    final path = await sl<MediaPickerService>().pickImage();
+    if (path != null) {
+      setState(() => _localLogoPath = path);
     }
   }
 
@@ -89,13 +92,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
       listener: (context, state) {
         if (state.status == AuthStatus.authenticated) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Profil başarıyla güncellendi')),
+            SnackBar(
+              content: Text(
+                LocaleKeys.edit_profile_success.tr(context: context),
+              ),
+            ),
           );
           context.router.back();
         } else if (state.status == AuthStatus.failure) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(state.errorMessage ?? 'Bir hata oluştu'),
+              content: Text(
+                resolveAuthErrorMessage(
+                  state.errorMessage ?? LocaleKeys.edit_profile_error,
+                  context,
+                ),
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -110,9 +122,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
             icon: const Icon(Icons.close, color: Colors.black87),
             onPressed: () => context.router.back(),
           ),
-          title: const Text(
-            'Profili Düzenle',
-            style: TextStyle(
+          title: Text(
+            LocaleKeys.edit_profile_title.tr(context: context),
+            style: const TextStyle(
               color: Colors.black87,
               fontWeight: FontWeight.bold,
               fontSize: 18,
@@ -122,9 +134,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
           actions: [
             TextButton(
               onPressed: _save,
-              child: const Text(
-                'Kaydet',
-                style: TextStyle(
+              child: Text(
+                LocaleKeys.edit_profile_save.tr(context: context),
+                style: const TextStyle(
                   color: Color(0xFF4CAF50),
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -159,12 +171,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       ),
                       child: ClipOval(
                         child: _localLogoPath != null
-                            ? Image.file(File(_localLogoPath!), fit: BoxFit.cover)
+                            ? Image.file(
+                                File(_localLogoPath!),
+                                fit: BoxFit.cover,
+                              )
                             : (widget.profile.logoUrl != null
-                                ? Image.network(widget.profile.logoUrl!,
-                                    fit: BoxFit.cover)
-                                : Icon(Icons.person,
-                                    size: 60, color: Colors.grey.shade400)),
+                                  ? Image.network(
+                                      widget.profile.logoUrl!,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Icon(
+                                      Icons.person,
+                                      size: 60,
+                                      color: Colors.grey.shade400,
+                                    )),
                       ),
                     ),
                     Positioned(
@@ -178,8 +198,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             shape: BoxShape.circle,
                             color: Color(0xFF4CAF50),
                           ),
-                          child: const Icon(Icons.camera_alt,
-                              color: Colors.white, size: 20),
+                          child: const Icon(
+                            Icons.camera_alt,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                         ),
                       ),
                     ),
@@ -189,46 +212,58 @@ class _EditProfilePageState extends State<EditProfilePage> {
               const SizedBox(height: 32),
 
               // Form
-              _buildSectionTitle('Temel Bilgiler'),
+              _buildSectionTitle(
+                LocaleKeys.edit_profile_section_basic.tr(context: context),
+              ),
               PremiumTextField(
                 controller: _nameController,
-                label: isFarmer ? 'Çiftlik Adı' : 'Ad Soyad',
+                label: isFarmer
+                    ? LocaleKeys.edit_profile_farm_name.tr(context: context)
+                    : LocaleKeys.edit_profile_full_name.tr(context: context),
               ),
               const SizedBox(height: 16),
               PremiumTextField(
                 controller: _bioController,
-                label: isFarmer ? 'Çiftlik Açıklaması' : 'Hakkımda',
+                label: isFarmer
+                    ? LocaleKeys.edit_profile_farm_desc.tr(context: context)
+                    : LocaleKeys.edit_profile_about_me.tr(context: context),
                 maxLines: 3,
               ),
               const SizedBox(height: 24),
 
-              _buildSectionTitle('İletişim'),
+              _buildSectionTitle(
+                LocaleKeys.edit_profile_section_contact.tr(context: context),
+              ),
               PremiumTextField(
                 controller: _altPhoneController,
-                label: 'Ek Telefon Numarası',
+                label: LocaleKeys.edit_profile_alt_phone.tr(context: context),
                 keyboardType: TextInputType.phone,
-                hint: '+47XXXXXXXX',
+                hint: LocaleKeys.auth_phone_hint.tr(context: context),
               ),
               const SizedBox(height: 24),
 
-              _buildSectionTitle('Sosyal Medya'),
+              _buildSectionTitle(
+                LocaleKeys.edit_profile_section_social.tr(context: context),
+              ),
               PremiumTextField(
                 controller: _instaController,
-                label: 'Instagram Kullanıcı Adı',
-                hint: '@kullaniciadi',
+                label: LocaleKeys.edit_profile_insta.tr(context: context),
+                hint: '@username',
               ),
               const SizedBox(height: 16),
               PremiumTextField(
                 controller: _fbController,
-                label: 'Facebook Sayfa Linki',
+                label: LocaleKeys.edit_profile_fb.tr(context: context),
               ),
               const SizedBox(height: 24),
 
               if (isFarmer) ...[
-                _buildSectionTitle('Ödeme Bilgileri'),
+                _buildSectionTitle(
+                  LocaleKeys.edit_profile_section_payment.tr(context: context),
+                ),
                 PremiumTextField(
                   controller: _ibanController,
-                  label: 'IBAN',
+                  label: LocaleKeys.edit_profile_iban.tr(context: context),
                   hint: 'NOXX XXXX XXXXXXX',
                 ),
                 const SizedBox(height: 32),
@@ -238,8 +273,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
               BlocBuilder<AuthBloc, AuthState>(
                 builder: (context, state) {
                   return PremiumButton(
-                    text: 'Değişiklikleri Kaydet',
-                    isLoading: state.status == AuthStatus.verifyingPhone,
+                    text: LocaleKeys.edit_profile_save_changes.tr(
+                      context: context,
+                    ),
+                    isLoading: state.status == AuthStatus.updating,
                     onPressed: _save,
                   );
                 },

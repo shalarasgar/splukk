@@ -1,6 +1,4 @@
-import 'package:flutter/material.dart';
 import 'package:splukk/features/listings/domain/entities/farm_listing.dart';
-import 'package:splukk/features/listings/presentation/listing_ui_helpers.dart';
 
 /// Параметры фильтрации объявлений.
 class ListingFilterParams {
@@ -17,6 +15,7 @@ class ListingFilterParams {
 
 /// Domain UseCase: фильтрация и проверка активности объявлений.
 /// Бизнес-логика вынесена из Presentation (MarketplaceCubit).
+/// Зависит только от Domain — нет импортов Flutter или Presentation.
 class FilterListingsUseCase {
   /// Применяет фильтры и возвращает только активные объявления.
   List<FarmListing> call({
@@ -43,7 +42,7 @@ class FilterListingsUseCase {
           listing.products.any((p) => p.categoryId == params.selectedCategory);
 
       final matchesDate = params.selectedDate == null ||
-          isListingAvailableOnDate(listing, params.selectedDate!);
+          _isAvailableOnDate(listing, params.selectedDate!);
 
       return matchesSearch && matchesCategory && matchesDate;
     }).toList();
@@ -62,7 +61,32 @@ class FilterListingsUseCase {
         s.specificDate!.month,
         s.specificDate!.day,
       );
-      return DateUtils.isSameDay(slotDate, today) || slotDate.isAfter(today);
+      return _isSameDay(slotDate, today) || slotDate.isAfter(today);
     });
   }
+
+  /// Проверяет доступность объявления на указанную дату.
+  /// Чистая Dart-функция, без зависимости от Flutter или Presentation.
+  bool _isAvailableOnDate(FarmListing listing, DateTime date) {
+    if (listing.manualClosed) return false;
+    final dateOnly = DateTime(date.year, date.month, date.day);
+
+    // Ищем слот с конкретной датой
+    final hasSpecific = listing.schedule.any((s) =>
+        s.specificDate != null &&
+        _isSameDay(
+          DateTime(s.specificDate!.year, s.specificDate!.month, s.specificDate!.day),
+          dateOnly,
+        ));
+    if (hasSpecific) return true;
+
+    // Ищем слот по дню недели
+    return listing.schedule.any(
+      (s) => s.specificDate == null && s.weekday == date.weekday,
+    );
+  }
+
+  /// Сравнивает даты без учёта времени. Заменяет Flutter-зависимый DateUtils.isSameDay.
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 }

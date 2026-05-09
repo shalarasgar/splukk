@@ -1,10 +1,12 @@
 import 'dart:developer';
 
 import 'package:auto_route/auto_route.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
+import 'package:splukk/core/l10n/locale_keys.dart';
 import 'package:splukk/core/utils/exit_dialog.dart';
 import 'package:splukk/features/listings/presentation/widgets/listing_card.dart';
 import 'package:splukk/features/marketplace/presentation/marketplace_cubit.dart';
@@ -109,7 +111,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Çiftliğini bul',
+                                  LocaleKeys.marketplace_hero_title.tr(context: context),
                                   style: GoogleFonts.outfit(
                                     fontSize: 32,
                                     fontWeight: FontWeight.bold,
@@ -118,7 +120,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Taze ve doğal ürünler kapınızda',
+                                  LocaleKeys.marketplace_hero_subtitle.tr(context: context),
                                   style: GoogleFonts.inter(
                                     fontSize: 16,
                                     color: Colors.white70,
@@ -138,10 +140,10 @@ class _MarketplacePageState extends State<MarketplacePage> {
                   ),
 
                   // 2. Горизонтальные категории
-                  const SliverToBoxAdapter(child: CategoryList()),
+                  SliverToBoxAdapter(child: CategoryList()),
 
                   // 3. Планирование даты
-                  const SliverToBoxAdapter(child: DateSelector()),
+                  SliverToBoxAdapter(child: DateSelector()),
 
                   // 4. Список объявлений или Карта
                   BlocBuilder<MarketplaceCubit, MarketplaceState>(
@@ -197,7 +199,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
-                                  'Sonuç bulunamadı',
+                                  LocaleKeys.marketplace_no_results.tr(context: context),
                                   style: GoogleFonts.inter(
                                     fontSize: 18,
                                     color: Colors.grey[600],

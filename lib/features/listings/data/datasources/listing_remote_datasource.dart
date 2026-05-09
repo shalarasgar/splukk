@@ -1,19 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cross_file/cross_file.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import '../../../../core/services/storage_service.dart';
 
 import '../../domain/listings_domain.dart';
+import '../../domain/exceptions/booking_exceptions.dart';
 import '../models/farm_listing_model.dart';
 
 class ListingRemoteDataSource {
   ListingRemoteDataSource({
     FirebaseFirestore? firestore,
-    FirebaseStorage? storage,
+    required StorageService storageService,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
-       _storage = storage ?? FirebaseStorage.instance;
+       _storageService = storageService;
 
   final FirebaseFirestore _firestore;
-  final FirebaseStorage _storage;
+  final StorageService _storageService;
 
   static const _collection = 'farm_listings';
 
@@ -55,20 +55,10 @@ class ListingRemoteDataSource {
     String listingId,
     List<String> paths,
   ) async {
-    final urls = <String>[];
-    var i = 0;
-    for (final path in paths) {
-      if (path.isEmpty) continue;
-      final bytes = await XFile(path).readAsBytes();
-      if (bytes.isEmpty) continue;
-      final ref = _storage.ref().child(
-        'farm_listings/$listingId/${DateTime.now().millisecondsSinceEpoch}_$i.jpg',
-      );
-      await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
-      urls.add(await ref.getDownloadURL());
-      i++;
-    }
-    return urls;
+    return _storageService.uploadMultipleFiles(
+      localPaths: paths,
+      folderPath: 'farm_listings/$listingId',
+    );
   }
 
   Future<String> createListing({
@@ -158,13 +148,13 @@ class ListingRemoteDataSource {
     await _firestore.runTransaction((transaction) async {
       final snapshot = await transaction.get(docRef);
       if (!snapshot.exists) {
-        throw Exception('İlan bulunamadı');
+        throw ListingNotFoundException();
       }
 
       final data = snapshot.data()!;
       final scheduleRaw = data['schedule'];
       if (scheduleRaw is! List) {
-        throw Exception('Geçersiz çalışma programı');
+        throw InvalidScheduleException();
       }
 
       int slotIndex = -1;
@@ -181,7 +171,7 @@ class ListingRemoteDataSource {
       }
 
       if (slotIndex == -1) {
-        throw Exception('Seçili saat aralığı bulunamadı veya değiştirilmiş');
+        throw SlotNotFoundException();
       }
 
       final targetSlot = Map<String, dynamic>.from(scheduleRaw[slotIndex]);
@@ -189,7 +179,7 @@ class ListingRemoteDataSource {
       final bookedCount = targetSlot['bookedCount'] as int? ?? 0;
 
       if (bookedCount >= maxPeople) {
-        throw Exception('Bu saat aralığı için kapasite doldu');
+        throw CapacityExceededException();
       }
 
       targetSlot['bookedCount'] = bookedCount + 1;

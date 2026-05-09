@@ -1,11 +1,12 @@
-import 'dart:developer';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:splukk/core/router/app_router.gr.dart';
-import 'package:url_launcher/url_launcher.dart';
-import '../../../../core/constants/products.dart';
+import '../../../../core/di/dependencies.dart';
+import '../../../../core/services/link_launcher_service.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:splukk/core/l10n/locale_keys.dart';
 import '../../domain/listings_domain.dart';
 import '../listing_ui_helpers.dart';
 
@@ -15,34 +16,29 @@ class ListingCard extends StatelessWidget {
   final FarmListing listing;
   final DateTime? now;
 
-  String _productNamesLine() {
+  String _productNamesLine(BuildContext context) {
     if (listing.products.isEmpty) return '';
     return listing.products
-        .map((p) {
-          final label = products[p.categoryId]?[p.productId] ?? p.productId;
-          return label;
-        })
+        .map((p) => 'products.${p.productId}'.tr(context: context))
         .join(', ');
   }
 
-  String _pickingLabel() {
+  String _pickingLabel(BuildContext context) {
     switch (listing.pickingType) {
       case PickingType.selfPicking:
-        return 'Kendi toplama';
+        return LocaleKeys.listings_picking_self.tr(context: context);
       case PickingType.prePicked:
-        return 'Toplanmış satış';
+        return LocaleKeys.listings_picking_prepicked.tr(context: context);
     }
   }
 
   Future<void> _openMaps(BuildContext context) async {
-    final uri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=${listing.latitude},${listing.longitude}',
-    );
-    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final url = 'https://www.google.com/maps/search/?api=1&query=${listing.latitude},${listing.longitude}';
+    final ok = await sl<LinkLauncherService>().openExternalUrl(url);
     if (!ok && context.mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Harita açılamadı')));
+      ).showSnackBar(SnackBar(content: Text(LocaleKeys.listings_error_map.tr(context: context))));
     }
   }
 
@@ -61,9 +57,8 @@ class ListingCard extends StatelessWidget {
     final open = isListingOpenNow(listing, t);
     final hours = todayHoursSummary(listing, t);
     final pct = listing.availabilityPercent.clamp(0, 100);
-    final headline = availabilityHeadlineForListing(listing);
+    final headline = availabilityHeadlineForListing(listing, context);
     final bandIdx = bandIndexForListing(listing);
-    log('open=======>>>>$open');
 
     // Используем наш "премиальный" зеленый для хороших состояний
     final accentGreen = const Color(0xFF2B8C5F);
@@ -206,7 +201,7 @@ class ListingCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          _productNamesLine(),
+                          _productNamesLine(context),
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             color: Colors.grey[700],
@@ -218,7 +213,7 @@ class ListingCard extends StatelessWidget {
                         _buildInfoRow(
                           Icons.back_hand_outlined,
                           // LucideIcons.hand,
-                          _pickingLabel(),
+                          _pickingLabel(context),
                         ),
                         if (hours != null)
                           _buildInfoRow(
@@ -241,7 +236,7 @@ class ListingCard extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                open ? 'AÇIK' : 'KAPALI',
+                                open ? LocaleKeys.listings_open.tr(context: context) : LocaleKeys.listings_closed.tr(context: context),
                                 style: GoogleFonts.inter(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w800,
@@ -261,7 +256,7 @@ class ListingCard extends StatelessWidget {
                                   children: [
                                     const SizedBox(width: 8),
                                     Text(
-                                      '${d.day} ${monthNameTr(d.month)}',
+                                      '${d.day} ${monthName(d.month, context.locale.languageCode)}',
                                       style: GoogleFonts.inter(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
@@ -336,7 +331,7 @@ class ListingCard extends StatelessWidget {
                   ElevatedButton.icon(
                     onPressed: () => _openMaps(context),
                     icon: const Icon(LucideIcons.navigation, size: 18),
-                    label: const Text('Tarif'),
+                    label: Text(LocaleKeys.listings_directions.tr(context: context)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: warningRed,
                       foregroundColor: Colors.white,

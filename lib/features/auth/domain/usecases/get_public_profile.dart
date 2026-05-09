@@ -1,3 +1,5 @@
+import 'package:dartz/dartz.dart';
+import '../../../../core/error/failures.dart';
 import 'package:splukk/features/auth/domain/auth_domain.dart';
 
 class GetPublicProfile {
@@ -5,7 +7,7 @@ class GetPublicProfile {
 
   GetPublicProfile(this._repository);
 
-  Future<UserProfile?> execute(String uid) {
+  Future<Either<Failure, UserProfile?>> execute(String uid) {
     return _repository.getProfile(uid);
   }
 }

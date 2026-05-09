@@ -1,26 +1,20 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/availability_presets.dart';
 import '../domain/listings_domain.dart';
 
-String weekdayNameTr(int weekday) {
-  switch (weekday) {
-    case DateTime.monday:
-      return 'Pazartesi';
-    case DateTime.tuesday:
-      return 'Salı';
-    case DateTime.wednesday:
-      return 'Çarşamba';
-    case DateTime.thursday:
-      return 'Perşembe';
-    case DateTime.friday:
-      return 'Cuma';
-    case DateTime.saturday:
-      return 'Cumartesi';
-    case DateTime.sunday:
-      return 'Pazar';
-    default:
-      return '';
-  }
+String weekdayName(int weekday, String locale) {
+  final now = DateTime.now();
+  final date = now.add(Duration(days: weekday - now.weekday));
+  return DateFormat.EEEE(locale).format(date);
 }
+
+String monthName(int month, String locale) {
+  final date = DateTime(2024, month, 1);
+  return DateFormat.MMM(locale).format(date);
+}
+
+String weekdayNameTr(int weekday) => weekdayName(weekday, 'tr');
 
 String formatDayMinutes(int minutes) {
   final h = minutes ~/ 60;
@@ -94,40 +88,25 @@ bool isListingAvailableOnDate(FarmListing listing, DateTime date) {
   return listing.schedule.any((s) => s.specificDate == null && s.weekday == date.weekday);
 }
 
-String availabilityHeadlineForListing(FarmListing listing) {
+String availabilityHeadlineForListing(FarmListing listing, BuildContext context) {
   return resolvedAvailabilityMessage(
     percent: listing.availabilityPercent,
     selectedIndexInBand: listing.availabilityMessageIndex,
+    context: context,
   );
 }
 
 int bandIndexForListing(FarmListing listing) =>
     availabilityBandIndexForPercent(listing.availabilityPercent);
 
-String monthNameTr(int month) {
-  switch (month) {
-    case 1: return 'Ock';
-    case 2: return 'Şub';
-    case 3: return 'Mar';
-    case 4: return 'Nis';
-    case 5: return 'May';
-    case 6: return 'Haz';
-    case 7: return 'Tem';
-    case 8: return 'Ağu';
-    case 9: return 'Eyl';
-    case 10: return 'Eki';
-    case 11: return 'Kas';
-    case 12: return 'Ara';
-    default: return '';
-  }
-}
+String monthNameTr(int month) => monthName(month, 'tr');
 
 DateTime getListingNextAvailableDate(FarmListing listing, DateTime from) {
   if (listing.manualClosed) return from;
 
   final startFrom = DateTime(from.year, from.month, from.day);
   
-  // Мы ищем на ближайшие 2 недели
+  // We look ahead for the next 2 weeks
   for (int i = 0; i < 14; i++) {
     final candidate = startFrom.add(Duration(days: i));
     if (isListingAvailableOnDate(listing, candidate)) {

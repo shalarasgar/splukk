@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:splukk/features/marketplace/presentation/marketplace_state.dart';
 import '../marketplace_cubit.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:splukk/core/l10n/locale_keys.dart';
 
 class SearchHeader extends StatelessWidget {
   final double headerHeight;
@@ -32,7 +34,7 @@ class SearchHeader extends StatelessWidget {
                     onTapOutside: (event) => FocusScope.of(context).unfocus(),
                     onChanged: context.read<MarketplaceCubit>().updateSearchQuery,
                     decoration: InputDecoration(
-                      hintText: 'Çiftlik, ürün, meyve ara...',
+                      hintText: LocaleKeys.marketplace_search_hint.tr(context: context),
                       hintStyle: GoogleFonts.inter(color: Colors.grey[600]),
                       prefixIcon: const Icon(Icons.search, color: Color(0xFF2B8C5F)),
                       border: InputBorder.none,

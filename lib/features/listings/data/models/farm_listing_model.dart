@@ -2,9 +2,29 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/listings_domain.dart';
 
-class FarmListingModel {
-  static FarmListing fromFirestore(String id, Map<String, dynamic> data) {
-    return FarmListing(
+class FarmListingModel extends FarmListing {
+  const FarmListingModel({
+    required super.id,
+    required super.farmerUid,
+    required super.farmName,
+    required super.city,
+    required super.imageUrls,
+    required super.pickingType,
+    required super.availabilityPercent,
+    super.availabilityMessageIndex,
+    required super.manualClosed,
+    super.description,
+    required super.latitude,
+    required super.longitude,
+    required super.products,
+    required super.schedule,
+    required super.createdAt,
+    required super.updatedAt,
+    required super.expiresAt,
+  });
+
+  factory FarmListingModel.fromFirestore(String id, Map<String, dynamic> data) {
+    return FarmListingModel(
       id: id,
       farmerUid: data['farmerUid'] as String? ?? '',
       farmName: data['farmName'] as String? ?? '',

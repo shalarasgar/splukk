@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../listings/domain/listings_domain.dart';
-import '../../listings/presentation/listing_ui_helpers.dart';
 import '../domain/usecases/filter_listings_usecase.dart';
 import 'marketplace_state.dart';
 
@@ -56,13 +54,16 @@ class MarketplaceCubit extends Cubit<MarketplaceState> {
     if (date == null) {
       emit(state.copyWith(clearDate: true));
     } else if (state.selectedDate != null &&
-        DateUtils.isSameDay(state.selectedDate, date)) {
+        _isSameDay(state.selectedDate!, date)) {
       emit(state.copyWith(clearDate: true));
     } else {
       emit(state.copyWith(selectedDate: date));
     }
     _applyFilters();
   }
+
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   void toggleMapView() {
     emit(state.copyWith(isMapView: !state.isMapView));

@@ -1,19 +1,19 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import '../../../../core/services/storage_service.dart';
 
 import '../../domain/auth_domain.dart';
 
 class UserProfileRemoteDataSource {
   UserProfileRemoteDataSource({
     FirebaseFirestore? firestore,
-    FirebaseStorage? storage,
+    required StorageService storageService,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _storage = storage ?? FirebaseStorage.instance;
+        _storageService = storageService;
 
   final FirebaseFirestore _firestore;
-  final FirebaseStorage _storage;
+  final StorageService _storageService;
 
   static const _usersCollection = 'users';
 
@@ -53,10 +53,10 @@ class UserProfileRemoteDataSource {
   }) async {
     String? logoUrl;
     if (localLogoPath != null && localLogoPath.isNotEmpty) {
-      final file = File(localLogoPath);
-      final ref = _storage.ref().child('farm_logos/$uid.jpg');
-      await ref.putFile(file);
-      logoUrl = await ref.getDownloadURL();
+      logoUrl = await _storageService.uploadFile(
+        localPath: localLogoPath,
+        destinationPath: 'farm_logos/$uid.jpg',
+      );
     }
 
     final country = farmCountry.trim();
@@ -90,10 +90,11 @@ class UserProfileRemoteDataSource {
   Future<void> updateUser(UserProfile profile, {String? localLogoPath}) async {
     String? logoUrl = profile.logoUrl;
     if (localLogoPath != null && localLogoPath.isNotEmpty) {
-      final file = File(localLogoPath);
-      final ref = _storage.ref().child('farm_logos/${profile.uid}.jpg');
-      await ref.putFile(file);
-      logoUrl = await ref.getDownloadURL();
+      final newUrl = await _storageService.uploadFile(
+        localPath: localLogoPath,
+        destinationPath: 'farm_logos/${profile.uid}.jpg',
+      );
+      if (newUrl != null) logoUrl = newUrl;
     }
 
     // We don't want to use ServerTimestamp here because we might want to preserve the original createdAt

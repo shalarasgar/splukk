@@ -1,3 +1,5 @@
+import 'package:dartz/dartz.dart';
+import '../../../../core/error/failures.dart';
 import '../entities/farm_listing.dart';
 
 abstract class ListingRepository {
@@ -5,9 +7,9 @@ abstract class ListingRepository {
 
   Stream<List<FarmListing>> watchListingsForFarmer(String farmerUid);
 
-  Future<FarmListing?> getListing(String id);
+  Future<Either<Failure, FarmListing?>> getListing(String id);
 
-  Future<String> createListing({
+  Future<Either<Failure, String>> createListing({
     required String farmerUid,
     required String farmName,
     required String city,
@@ -23,12 +25,12 @@ abstract class ListingRepository {
     required List<DayTimeSlot> schedule,
   });
 
-  Future<void> updateListing({
+  Future<Either<Failure, void>> updateListing({
     required FarmListing listing,
     required List<String> newImageLocalPaths,
   });
 
-  Future<void> deleteListing(String id);
+  Future<Either<Failure, void>> deleteListing(String id);
 
-  Future<void> bookSlot({required String listingId, required DayTimeSlot slot});
+  Future<Either<Failure, void>> bookSlot({required String listingId, required DayTimeSlot slot});
 }

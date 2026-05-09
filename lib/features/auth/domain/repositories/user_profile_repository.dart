@@ -1,15 +1,17 @@
+import 'package:dartz/dartz.dart';
+import '../../../../core/error/failures.dart';
 import '../entities/user_profile.dart';
 
 abstract class UserProfileRepository {
-  Future<UserProfile?> getProfile(String uid);
+  Future<Either<Failure, UserProfile?>> getProfile(String uid);
 
-  Future<void> createConsumer({
+  Future<Either<Failure, void>> createConsumer({
     required String uid,
     required String phone,
     required String fullName,
   });
 
-  Future<void> createFarmer({
+  Future<Either<Failure, void>> createFarmer({
     required String uid,
     required String phone,
     required String farmName,
@@ -24,5 +26,5 @@ abstract class UserProfileRepository {
     String? localLogoPath,
   });
 
-  Future<void> updateProfile(UserProfile profile, {String? localLogoPath});
+  Future<Either<Failure, void>> updateProfile(UserProfile profile, {String? localLogoPath});
 }

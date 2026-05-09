@@ -5,18 +5,21 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../marketplace_cubit.dart';
 import '../marketplace_state.dart';
 
+import 'package:easy_localization/easy_localization.dart';
+import 'package:splukk/core/l10n/locale_keys.dart';
+
 class CategoryList extends StatelessWidget {
   const CategoryList({super.key});
 
   @override
   Widget build(BuildContext context) {
     final categories = [
-      {'id': 'all', 'label': 'Tümü', 'icon': LucideIcons.layoutGrid},
-      {'id': 'berries', 'label': 'Orman meyveleri', 'icon': LucideIcons.cherry},
-      {'id': 'fruits', 'label': 'Meyveler', 'icon': LucideIcons.apple},
-      {'id': 'vegetables', 'label': 'Sebzeler', 'icon': LucideIcons.carrot},
-      {'id': 'herbs', 'label': 'Yeşillikler', 'icon': LucideIcons.leaf},
-      {'id': 'flowers', 'label': 'Çiçekler', 'icon': LucideIcons.flower},
+      {'id': 'all', 'label': LocaleKeys.categories_all.tr(context: context), 'icon': LucideIcons.layoutGrid},
+      {'id': 'berries', 'label': LocaleKeys.categories_berries.tr(context: context), 'icon': LucideIcons.cherry},
+      {'id': 'fruits', 'label': LocaleKeys.categories_fruits.tr(context: context), 'icon': LucideIcons.apple},
+      {'id': 'vegetables', 'label': LocaleKeys.categories_vegetables.tr(context: context), 'icon': LucideIcons.carrot},
+      {'id': 'herbs', 'label': LocaleKeys.categories_herbs.tr(context: context), 'icon': LucideIcons.leaf},
+      {'id': 'flowers', 'label': LocaleKeys.categories_flowers.tr(context: context), 'icon': LucideIcons.flower},
     ];
 
     return Container(

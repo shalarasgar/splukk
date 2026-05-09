@@ -1,16 +1,18 @@
+import 'package:dartz/dartz.dart';
+import '../../../../core/error/failures.dart';
 import '../entities/booking.dart';
 
 /// Domain-слой: абстракция для работы с бронированиями.
 /// Presentation и UseCases зависят только от этого интерфейса, а не от реализации.
 abstract class BookingRepository {
-  Future<Booking?> getUserBookingForListing({
+  Future<Either<Failure, Booking?>> getUserBookingForListing({
     required String userUid,
     required String listingId,
   });
 
-  Future<List<Booking>> getUserBookings({required String userUid});
+  Future<Either<Failure, List<Booking>>> getUserBookings({required String userUid});
 
-  Future<void> createBooking({
+  Future<Either<Failure, void>> createBooking({
     required String userUid,
     required String listingId,
     required int weekday,
@@ -20,10 +22,10 @@ abstract class BookingRepository {
     int? specificDateMs,
   });
 
-  Future<void> updateBooking({
+  Future<Either<Failure, void>> updateBooking({
     required Booking existing,
     required int newGuestCount,
   });
 
-  Future<void> cancelBooking({required Booking booking});
+  Future<Either<Failure, void>> cancelBooking({required Booking booking});
 }

@@ -2,6 +2,8 @@ import 'dart:developer' as developer;
 
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 
+import 'package:dartz/dartz.dart';
+import '../../../../core/error/failures.dart';
 import '../../domain/auth_domain.dart';
 
 void _logPhoneAuth(String message, {Object? error, StackTrace? stackTrace}) {
@@ -27,17 +29,25 @@ class PhoneAuthRepositoryImpl implements PhoneAuthRepository {
   }
 
   @override
-  Future<void> signOut() => _auth.signOut();
+  Future<Either<Failure, void>> signOut() async {
+    try {
+      await _auth.signOut();
+      return const Right(null);
+    } catch (e) {
+      return Left(AuthFailure(e.toString()));
+    }
+  }
 
   @override
-  Future<void> startVerifyPhoneNumber(
+  Future<Either<Failure, void>> startVerifyPhoneNumber(
     String phoneNumber, {
     required Future<void> Function(SessionUser user) verificationCompleted,
     required void Function(String message) verificationFailed,
     required void Function(String verificationId) codeSent,
     required void Function(String verificationId) codeAutoRetrievalTimeout,
-  }) {
-    return _auth.verifyPhoneNumber(
+  }) async {
+    try {
+      await _auth.verifyPhoneNumber(
       phoneNumber: phoneNumber,
       timeout: const Duration(seconds: 60),
       verificationCompleted: (credential) async {
@@ -74,12 +84,16 @@ class PhoneAuthRepositoryImpl implements PhoneAuthRepository {
         );
         codeSent(verificationId);
       },
-      codeAutoRetrievalTimeout: codeAutoRetrievalTimeout,
-    );
+        codeAutoRetrievalTimeout: codeAutoRetrievalTimeout,
+      );
+      return const Right(null);
+    } catch (e) {
+      return Left(AuthFailure(e.toString()));
+    }
   }
 
   @override
-  Future<SessionUser> signInWithSmsCode({
+  Future<Either<Failure, SessionUser>> signInWithSmsCode({
     required String verificationId,
     required String smsCode,
   }) async {
@@ -90,13 +104,15 @@ class PhoneAuthRepositoryImpl implements PhoneAuthRepository {
       );
       final result = await _auth.signInWithCredential(credential);
       final u = result.user!;
-      return SessionUser(uid: u.uid, phoneNumber: u.phoneNumber);
+      return Right(SessionUser(uid: u.uid, phoneNumber: u.phoneNumber));
     } on firebase_auth.FirebaseAuthException catch (e) {
       _logPhoneAuth(
         'signInWithSmsCode failed: code=${e.code} message=${e.message}',
         error: e,
       );
-      throw PhoneAuthException(e.message ?? 'Kod hatalı');
+      return Left(AuthFailure(e.message ?? 'Kod hatalı'));
+    } catch (e) {
+      return Left(AuthFailure(e.toString()));
     }
   }
 }

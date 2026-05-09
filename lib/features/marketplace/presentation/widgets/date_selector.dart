@@ -3,6 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../marketplace_cubit.dart';
 import '../marketplace_state.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:splukk/core/l10n/locale_keys.dart';
+import 'package:intl/intl.dart';
 
 class DateSelector extends StatelessWidget {
   const DateSelector({super.key});
@@ -24,7 +27,7 @@ class DateSelector extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
-              'Ziyaret Planla',
+              LocaleKeys.marketplace_plan_visit.tr(context: context),
               style: GoogleFonts.outfit(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -74,7 +77,7 @@ class DateSelector extends StatelessWidget {
                           ),
                           alignment: Alignment.center,
                           child: Text(
-                            'Tümü',
+                            LocaleKeys.common_all.tr(context: context),
                             style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
@@ -131,7 +134,7 @@ class DateSelector extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              _weekdayAbbr(date.weekday),
+                              _weekdayAbbr(date.weekday, context.locale.languageCode),
                               style: GoogleFonts.inter(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
@@ -164,24 +167,9 @@ class DateSelector extends StatelessWidget {
     );
   }
 
-  String _weekdayAbbr(int wd) {
-    switch (wd) {
-      case DateTime.monday:
-        return 'Pzt';
-      case DateTime.tuesday:
-        return 'Sal';
-      case DateTime.wednesday:
-        return 'Çrş';
-      case DateTime.thursday:
-        return 'Prş';
-      case DateTime.friday:
-        return 'Cum';
-      case DateTime.saturday:
-        return 'Cmt';
-      case DateTime.sunday:
-        return 'Paz';
-      default:
-        return '';
-    }
+  String _weekdayAbbr(int wd, String locale) {
+    final now = DateTime.now();
+    final date = now.add(Duration(days: wd - now.weekday));
+    return DateFormat.E(locale).format(date);
   }
 }
